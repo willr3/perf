@@ -1,0 +1,14 @@
+rootProject.name = 'perf'
+
+include 'analysis'
+include 'byteman'
+include 'diff'
+include 'git'
+include 'parse'
+include 'util'
+include 'qed'
+include 'stack'
+include 'wildfly'
+include 'reflect'
+//findProject(':reflect')?.name = 'perf.reflect'
+

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0" xmlns:m="http://ant.apache.org/ivy/maven">
+  <info organisation="" module="perf" revision="unspecified" status="integration" publication="20160218114941">
+    <description/>
+  </info>
+  <configurations>
+    <conf name="archives" visibility="public" description="Configuration for archive artifacts."/>
+    <conf name="default" visibility="public" description="Configuration for default artifacts."/>
+  </configurations>
+  <publications/>
+</ivy-module>

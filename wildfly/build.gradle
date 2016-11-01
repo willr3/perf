@@ -1,0 +1,29 @@
+version 'unspecified'
+
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+    compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
+    compile group: 'org.jboss', name: 'jboss-dmr', version: '1.2.0.Final'
+    compile group: 'org.jboss.remoting3', name: 'jboss-remoting', version: '3.3.0.Final'
+    compile group: 'org.jboss.as', name: 'jboss-as-protocol', version: '7.2.0.Final'
+    compile group: 'org.jboss.sasl', name: 'jboss-sasl', version: '1.0.3.Final'
+    compile group: 'org.jboss.xnio', name: 'xnio-api', version: '3.1.0.Final'
+    compile group: 'org.jboss.xnio', name: 'xnio-nio', version: '3.1.0.Final'
+    compile group: 'org.jboss.logging', name: 'jboss-logging', version: '3.1.2.GA'
+    compile group: 'org.jboss.logmanager', name: 'jboss-logmanager', version: '1.5.2.Final'
+    compile group: 'org.jboss.threads', name: 'jboss-threads', version: '2.1.1.Final'
+    compile group: 'org.jboss.marshalling', name: 'jboss-marshalling', version: '1.4.4.Final'
+    compile group: 'org.jboss.as', name: 'jboss-as-controller-client', version: '7.2.0.Final'
+    compile group: 'org.jboss', name: 'jandex', version: '1.0.3.Final'
+
+}

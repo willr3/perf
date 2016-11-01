@@ -1,0 +1,21 @@
+group 'perf'
+version '0.1-SNAPSHOT'
+
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url 'http://repository.jboss.org/nexus/content/groups/public-jboss/'}
+}
+
+dependencies {
+    compile project(':util')
+    compile 'org.jboss.logging:jboss-logging:3.0.0.CR1'
+    compile 'org.jboss.logmanager:jboss-logmanager:2.0.3.Final'
+    compile 'com.jcraft:jsch:0.1.53'
+    compile 'org.jdeferred:jdeferred-core:1.2.4'
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+}
