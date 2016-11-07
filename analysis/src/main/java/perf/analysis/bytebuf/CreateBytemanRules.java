@@ -24,9 +24,22 @@ import java.util.function.*;
  */
 public class CreateBytemanRules {
 
+
     public static void main(String[] args) {
         long start,stop = 0;
         String targetRuntime = "/home/wreicher/runtime/wildfly-10.0.0.Final-pool/";
+
+        //global index file for frames (so we can use the index rather than the full string in the log
+        String frameIndex = "/home/wreicher/perfWork/byteBuffer/frameIndex.json";
+        //global index of thread names because I thought it would be a good idea but probably useless
+        String threadIndex = "/home/wreicher/perfWork/byteBuffer/threadNames.json";
+
+        //The single file for all stack tracing from byteman rule execution
+        String logFile = "/home/wreicher/perfWork/byteBuffer/argCalls.log";
+
+        //the destination file for all the byteman rules
+        String btmFile = "/home/wreicher/script/byteman/MessageRefImpl.btm";
+
         EnumeratingClassLoader classLoader = new EnumeratingClassLoader();
         Thread.currentThread().setContextClassLoader(classLoader);
         classLoader.addModules(targetRuntime+"modules/");
@@ -72,7 +85,7 @@ public class CreateBytemanRules {
             "writeThreadNameIndexFile(\"{{threadIndex}}\");",
             "setTriggering(true);");
 
-        //Tracks this, return, and any params that are
+        //Tracks this, return, and any params that are part of the method signature
         RulePattern hierarchyPattern = new RulePattern("callTrace",
             "RULE {{name}}_{{uid}}",
             "{{classType}} ^{{currentClassName}}",
@@ -92,50 +105,19 @@ public class CreateBytemanRules {
                 "\"rule\", "+
                 "\"{{name}}_{{uid}}\"," +
                 "{{#nonStatic}}" +
-                    "\"className\",$this.getClass().getName()," +
-                    "\"hashCode\",\"\"+System.identityHashCode($this)" +
+                    "\"caller.oId\", \"\"+$this.getClass().getName()+\"#\"+System.identityHashCode($this) " +
                 "{{/nonStatic}}" +
                 "{{^nonStatic}}" +
-                    "\"className\",\"{{currentClassName}}\"" +
+                    "\"caller.oId\", \"{{currentClassName}}\" " + //need this space here to prevent formatting problems with the param loop starting with a ,
                 "{{/nonStatic}}" +
                 "{{#hasReturn}} , " +
-                    "\"rtrn.className\", \"\"+$!.getClass().getName() , " +
-                    "\"rtrn.hashCode\", \"\"+System.identityHashCode($!) " +
+                    "\"rtrn.oId\", \"\"+$!.getClass().getName()+\"#\"+System.identityHashCode($!)" +
                 "{{/hasReturn}}" +
                 "{{#params}} , " +
-                    "\"param.{{.}}.className\", \"\"+${{.}}.getClass().getName() , " +
-                    "\"param.{{.}}.hashCode\", \"\"+System.identityHashCode(${{.}}) " +
+                    "\"param.{{.}}.oId\", \"\"+${{.}}.getClass().getName()+\"#\"+System.identityHashCode(${{.}}) " +
                 "{{/params}} });",
             "setTriggering(true);",
             "ENDRULE");
-        RulePattern fieldPattern = new RulePattern("fieldWrapper",
-                "RULE {{name}}_{{uid}}",
-                "{{classType}} ^{{currentClassName}}",
-                "METHOD {{{method}}}",
-                "HELPER perf.byteman.JsonHelper",
-                "AT {{tracePoint}}",
-                "IF {{#hasReturn}}TRUE{{/hasReturn}}{{^hasReturn}}FALSE{{/hasReturn}} {{#fields}} || (this.{{.}} != null && this.{{.}}.getClass().getName().equals(\"{{targetClassName}}\") ) {{/fields}}",
-                "DO",
-                "setTriggering(false);",
-                "openTrace(\"{{name}}\",\"{{logFile}}\");",
-                "traceJsonStack(\"{{name}}\", new String[]{ " +
-                        "{{#nonStatic}}" +
-                            "\"className\", $this.getClass().getName()," +
-                            "\"callerHashCode\", \"\"+System.identityHashCode($this) " +
-                        "{{/nonStatic}}" +
-                        "{{^nonStatic}}" +
-                            "\"className\", \"{{currentClassName}}\"" + //need this here to prevent formatting problems with the param loop starting with a ,
-                        "{{/nonStatic}}" +
-                        "{{#hasReturn}} , " +
-                            "\"rtrn.className\", \"\"+$!.getClass().getName() , " +
-                            "\"rtrn.hashCode\", \"\"+System.identityHashCode($!) " +
-                        "{{/hasReturn}}" +
-                        "{{#fields}} , " +
-                            "\"field.{{.}}.className\", \"\"+$this.{{.}}.getClass().getName() , "+
-                            "\"field.{{.}}.hashCode\", \"\"+System.identityHashCode($this.{{.}}) "+
-                        "{{/fields}} });",
-                "setTriggering(true);",
-                "ENDRULE");
         RulePattern argPattern = new RulePattern("argTrace",
             "RULE {{name}}_{{uid}}",
             "{{classType}} ^{{currentClassName}}",
@@ -147,23 +129,45 @@ public class CreateBytemanRules {
             "setTriggering(false);",
             "openTrace(\"{{name}}\",\"{{logFile}}\");",
             "traceJsonStack(\"{{name}}\", new String[]{ " +
-                    "\"rule\", "+
-                    "\"{{name}}_{{uid}}\"," +
+                "\"rule\", "+
+                "\"{{name}}_{{uid}}\"," +
                 "{{#nonStatic}}" +
-                    "\"className\", $this.getClass().getName()," +
-                    "\"callerHashCode\", \"\"+System.identityHashCode($this) " +
+                    "\"caller.oId\", \"\"+$this.getClass().getName()+\"#\"+System.identityHashCode($this) " +
                 "{{/nonStatic}}" +
                 "{{^nonStatic}}" +
                     "\"className\", \"{{currentClassName}}\"" + //need this here to prevent formatting problems with the param loop starting with a ,
                 "{{/nonStatic}}" +
                 "{{#hasReturn}} , " +
-                    "\"rtrn.className\", \"\"+$!.getClass().getName() , " +
-                    "\"rtrn.hashCode\", \"\"+System.identityHashCode($!) " +
+                    "\"rtrn.oId\", \"\"+$!.getClass().getName()+\"#\"+System.identityHashCode($!)" +
                 "{{/hasReturn}}" +
                 "{{#params}} , " +
-                    "\"param.{{.}}.className\", \"\"+${{.}}.getClass().getName() , " +
-                    "\"param.{{.}}.hashCode\", \"\"+System.identityHashCode(${{.}}) " +
+                    "\"param.{{.}}.oId\", \"\"+${{.}}.getClass().getName()+\"#\"+System.identityHashCode(${{.}}) " +
                 "{{/params}} });",
+            "setTriggering(true);",
+            "ENDRULE");
+        RulePattern fieldPattern = new RulePattern("fieldWrapper",
+            "RULE {{name}}_{{uid}}",
+            "{{classType}} ^{{currentClassName}}",
+            "METHOD {{{method}}}",
+            "HELPER perf.byteman.JsonHelper",
+            "AT {{tracePoint}}",
+            "IF {{#hasReturn}}TRUE{{/hasReturn}}{{^hasReturn}}FALSE{{/hasReturn}} {{#fields}} || (this.{{.}} != null && this.{{.}}.getClass().getName().equals(\"{{targetClassName}}\") ) {{/fields}}",
+            "DO",
+            "setTriggering(false);",
+            "openTrace(\"{{name}}\",\"{{logFile}}\");",
+            "traceJsonStack(\"{{name}}\", new String[]{ " +
+                "{{#nonStatic}}" +
+                    "\"caller.oId\", \"\"+$this.getClass().getName()+\"#\"+System.identityHashCode($this) " +
+                "{{/nonStatic}}" +
+                "{{^nonStatic}}" +
+                    "\"caller.oId\", \"{{currentClassName}}\" " + //need this space here to prevent formatting problems with the param loop starting with a ,
+                "{{/nonStatic}}" +
+                "{{#hasReturn}} , " +
+                    "\"rtrn.oId\", \"\"+$!.getClass().getName()+\"#\"+System.identityHashCode($!)" +
+                "{{/hasReturn}}" +
+                "{{#fields}} , " +
+                    "\"field.{{.}}.oId\", \"\"+$this.{{.}}.getClass().getName()+\"#\"+System.identityHashCode($this.{{.}}) "+
+                "{{/fields}} });",
             "setTriggering(true);",
             "ENDRULE");
 
@@ -184,17 +188,17 @@ public class CreateBytemanRules {
             boolean rtrn = type.isAssignableFrom(classTarget) && !type.equals(Object.class);
             return rtrn;
         };
-        final Function<Class,Predicate<Class>> getTargetMatcher = (classTarget)-> (type)-> isTypeAssignable.test(type,classTarget);
+        final Function<Class,Predicate<Class>> createTargetMatcher = (classTarget)-> (type)-> isTypeAssignable.test(type,classTarget);
         final BiPredicate<Parameter,Class> isAssignable = (parameter, classTarget)->{
             collector.clear();
             collector.visit(parameter.getParameterizedType());
-            return collector.getTypes().stream().anyMatch(getTargetMatcher.apply(classTarget));
+            return collector.getTypes().stream().anyMatch(createTargetMatcher.apply(classTarget));
         };
         final BiPredicate<Field,Class> isFieldAssignable = (field, classTarget)->{
             collector.clear();
             collector.visit(field.getGenericType());
             //should make the predicate a parameter not the classTarget
-            return collector.getTypes().stream().anyMatch(getTargetMatcher.apply(classTarget));
+            return collector.getTypes().stream().anyMatch(createTargetMatcher.apply(classTarget));
         };
         final BiFunction<Parameter[],Class,Set<Integer>> paramIndexMatcher = (parameters, classTarget)->{
             LinkedHashSet<Integer> rtrn = new LinkedHashSet<>();
@@ -217,13 +221,13 @@ public class CreateBytemanRules {
             return rtrn;
         };
 
-        List<String> targetClassNames = Arrays.asList("org.apache.activemq.artemis.api.core.ActiveMQBuffers$AMQBuffer","org.apache.activemq.artemis.core.server.impl.MessageReferenceImpl");
+        List<String> targetClassNames = Arrays.asList(/*"org.apache.activemq.artemis.api.core.ActiveMQBuffers$AMQBuffer",*/ "org.apache.activemq.artemis.core.server.impl.MessageReferenceImpl");
 
-        try (Writer ruleWriter = new FileWriter("/home/wreicher/script/byteman/MessageReference.Arg.btm")){
+        try (Writer ruleWriter = new FileWriter( btmFile )){
 
             Map<String,Object> helperMap = new HashMap<>();
-            helperMap.put("frameIndex","/home/wreicher/perfWork/byteBuffer/frameIndex.json");
-            helperMap.put("threadIndex","/home/wreicher/perfWork/byteBuffer/threadNames.json");
+            helperMap.put("frameIndex",frameIndex);
+            helperMap.put("threadIndex",threadIndex);
 
             jsonHelperStart.apply(ruleWriter,helperMap);
             jsonHelperStop.apply(ruleWriter,helperMap);
@@ -233,9 +237,7 @@ public class CreateBytemanRules {
                 Class targetClass = classLoader.loadClass(targetClassName);
 
                 ruleValues.put("targetClassName", targetClassName);
-                //ruleValues.put("logFile","/home/wreicher/perfWork/byteBuffer/hierarchyCalls.log");
-                //changing logic to put everything in 1 file
-                ruleValues.put("logFile", "/home/wreicher/perfWork/byteBuffer/argCalls.log");
+                ruleValues.put("logFile", logFile);
 
                 final MethodClassActor methodParamChecker = (method, currentClass) -> {
                     String signature = BytemanUtil.getMethodSignature(method);
@@ -255,7 +257,7 @@ public class CreateBytemanRules {
                     }
                     collector.clear();
                     collector.visit(method.getGenericReturnType());
-                    boolean returnTypeMatch = collector.getTypes().stream().anyMatch(getTargetMatcher.apply(targetClass));
+                    boolean returnTypeMatch = collector.getTypes().stream().anyMatch(createTargetMatcher.apply(targetClass));
                     if (returnTypeMatch) {
                         ruleValues.put("tracePoint", "EXIT");
                         ruleValues.put("hasReturn", true);
@@ -263,11 +265,6 @@ public class CreateBytemanRules {
                         ruleValues.put("tracePoint", "ENTRY");
                         ruleValues.remove("hasReturn");
                     }
-//                System.out.println(
-//                        AsciiArt.ANSI_PURPLE + currentClass.getName().toString() + AsciiArt.ANSI_RESET + " " +
-//                                vals.get("params") + " " +
-//                                AsciiArt.ANSI_CYAN + signature + AsciiArt.ANSI_RESET);
-                    //hierarchyPattern.apply(ruleWriter,vals);
                     if (targetIsNew.test(currentClass.getName() + "." + signature)) {
                         hierarchyPattern.apply(ruleWriter, ruleValues);
                     } else {
@@ -290,10 +287,6 @@ public class CreateBytemanRules {
                     ruleValues.put("nonStatic", true);
                     ruleValues.put("tracePoint", "ENTRY");
                     ruleValues.remove("hasReturn");
-//                System.out.println(
-//                        AsciiArt.ANSI_PURPLE + currentClass.getName().toString() + AsciiArt.ANSI_RESET + " " +
-//                                vals.get("params") + " " +
-//                                AsciiArt.ANSI_CYAN + signature + AsciiArt.ANSI_RESET);
 
                     if (targetIsNew.test(currentClass.getName() + "." + signature)) {
                         hierarchyPattern.apply(ruleWriter, ruleValues);
@@ -310,7 +303,7 @@ public class CreateBytemanRules {
                 System.out.println("Finished walking hierarchy for: " + targetClassName);
                 System.out.println("Scanning classpath for potential usage");
 
-                ruleValues.put("logFile", "/home/wreicher/perfWork/byteBuffer/argCalls.log");
+                ruleValues.put("logFile", logFile);
 
                 classLoader.getLoadedClasses().forEach((knownClass) -> {
                     ruleValues.put("currentClassName", knownClass.getName());
@@ -338,10 +331,6 @@ public class CreateBytemanRules {
                                 ruleValues.put("method", methodSignature);
                                 ruleValues.put("tracePoint", "ENTRY");
                                 ruleValues.remove("hasReturn");
-//                            System.out.println(
-//                                    AsciiArt.ANSI_PURPLE + knownClass.getName().toString() + AsciiArt.ANSI_RESET + " " +
-//                                            vals.get("params") + " " +
-//                                            AsciiArt.ANSI_CYAN + methodSignature + AsciiArt.ANSI_RESET);
 
                                 if (targetIsNew.test(knownClass.getName() + "." + methodSignature)) {
                                     argPattern.apply(ruleWriter, ruleValues);
@@ -357,7 +346,7 @@ public class CreateBytemanRules {
                             Set<Integer> paramSet = paramIndexMatcher.apply(parameters, targetClass);
                             collector.clear();
                             collector.visit(m.getGenericReturnType());
-                            boolean returnTypeMatch = collector.getTypes().stream().anyMatch(getTargetMatcher.apply(targetClass));
+                            boolean returnTypeMatch = collector.getTypes().stream().anyMatch(createTargetMatcher.apply(targetClass));
                             if (returnTypeMatch) {
                                 ruleValues.put("tracePoint", "EXIT");
                                 ruleValues.put("hasReturn", true);
@@ -378,11 +367,6 @@ public class CreateBytemanRules {
                             String methodSignature = BytemanUtil.getMethodSignature(m);
                             ruleValues.put("method", methodSignature);
                             if (!paramSet.isEmpty() || returnTypeMatch || !fieldSet.isEmpty()) {//we have a parameter we need to track
-//                            System.out.println(
-//                                AsciiArt.ANSI_PURPLE + knownClass.getName().toString() + AsciiArt.ANSI_RESET + " " +
-//                                vals.get("params") + " " +
-//                                AsciiArt.ANSI_CYAN + methodSignature + AsciiArt.ANSI_RESET);
-
                                 if (targetIsNew.test(knownClass.getName() + "." + methodSignature)) {
                                     argPattern.apply(ruleWriter, ruleValues);
                                 } else {
@@ -395,14 +379,6 @@ public class CreateBytemanRules {
                 });
                 ruleWriter.flush();
                 System.out.println(targetClassName);
-                for(RulePattern rule : rules){
-                    System.out.println(
-                            rule.getName() +
-                                    " count " +
-                                    AsciiArt.ANSI_CYAN +
-                                    rule.getUid() +
-                                    AsciiArt.ANSI_RESET);
-                }
             }
         } catch (ClassNotFoundException | TypeNotPresentException e) {
             e.printStackTrace();

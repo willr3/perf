@@ -20,6 +20,7 @@ import java.io.*;
 import java.nio.file.Paths;
 import java.util.*;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -36,15 +37,17 @@ public class ParseArgCalls {
 
         StackBuilder stackBuilder = new StackBuilder();
 
+
+
         //Inputs
         String perfWork = "/home/wreicher/perfWork/byteBuffer/";
-        String workFolder = Paths.get(perfWork,"9O-AMQBuffer").toString();//"/home/wreicher/perfWork/byteBuffer/9O-AMQBuffer/";
-        String btmPath = Paths.get(workFolder,"argCalls.log").toString();
+        String workFolder = Paths.get(perfWork,"10B-MR").toString();//"/home/wreicher/perfWork/byteBuffer/9O-AMQBuffer/";
+        String btmLogPath = Paths.get(workFolder,"argCalls.log").toString();
 
         String frameIndexPath = Paths.get(workFolder,"frameIndex.json").toString();
         String threadNamesOutput = Paths.get(workFolder,"threadNames.json").toString();
 
-        String allDataOutput = Paths.get(workFolder,"allData.cn2.tst.json").toString();
+        String allDataOutput = Paths.get(workFolder,"allData.json").toString();
 
         Indexer<String> frameIndex = new Indexer<>();
         Indexer<String> threadNameIndex = new Indexer<>();
@@ -69,7 +72,7 @@ public class ParseArgCalls {
         Matcher paramMather = Pattern.compile("param\\.(?<idx>\\d+)\\.(?<paramName>\\S+)").matcher("");
         Matcher intMatcher = Pattern.compile("\\d+").matcher("");
 
-        Function<StackSetInvocation,Set<String>> getObjects = (stackSetInvocation)->{
+        Function<StackSetInvocation,Set<String>> getTrackedObjectIds = (stackSetInvocation)->{
             Set<String> rtrn = new HashSet<>();
             stackSetInvocation.getInvocations().forEach((stackInvocation)->{
                 Queue<JSONObject> todo = new LinkedList<JSONObject>();
@@ -80,10 +83,10 @@ public class ParseArgCalls {
                     JSONObject next = todo.remove();
                     next.keySet().forEach((key)->{
                         Object value = next.get(key);
-                        if(key.contains("hashCode")){
+                        if(key.contains(OBJECT_ID_KEY)){
                             rtrn.add(value.toString());
                         }else if (value instanceof JSONObject){
-                            todo.add((JSONObject)value);
+                            todo.add((JSONObject)value); // handle the case of nested json objects
                         }
                     });
                 }
@@ -91,18 +94,17 @@ public class ParseArgCalls {
             return rtrn;
         };
 
-        try ( BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(btmPath))) ) {
+        try ( BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(btmLogPath))) ) {
 
             Map<String,List<StackInvocation>> bufferInvocations = new HashMap<>();
             HashMap<Integer,Stack> uniqueStacks = new HashMap<>();
 
             long start = System.currentTimeMillis();
-            reader.lines().limit(1).forEach((line)-> {
+            reader.lines().forEach((line)-> {
                 JSONObject json = new JSONObject(line);
-                System.out.println(json.toString(2));
-                //convert param.#.*:value to param : { # : {*:value, ... }, ... }
+                //System.out.println(json.toString(2));
                 List<String> keys = Arrays.asList(json.keySet().toArray(new String[]{}));
-                System.out.println(keys);
+                //System.out.println(keys);
 
                 List<Integer> frames = new ArrayList<Integer>();
                 List<Integer> lines = new ArrayList<Integer>();
@@ -112,7 +114,7 @@ public class ParseArgCalls {
                 for (String key : keys) {
                     Object value = json.get(key);
 
-                    if(key.indexOf("className") > -1){
+                    if( (key.indexOf("oId") > -1) && !key.startsWith("caller") ){
                         int classNameIndex = classNameIndexer.add(value.toString());
                         value = new Integer(classNameIndex);
                     }
@@ -122,7 +124,7 @@ public class ParseArgCalls {
                         }
                     }
                     //turn param.x.y into param : { x : { y : ? } }
-                    if (paramMather.reset(key).matches()) {
+/*                    if (paramMather.reset(key).matches()) {
 
                         String idx = paramMather.group("idx");
                         String idxName = paramMather.group("paramName");
@@ -136,7 +138,10 @@ public class ParseArgCalls {
                         }
                         data.getJSONObject("param").getJSONObject(idx).put(idxName, value);
 
-                    } else if (key.equals("stack")) { //
+                    }
+                    else
+*/
+                    if (key.equals("stack")) { //
                         JSONArray arry = json.getJSONArray(key);
                         for (int i = 0; i < arry.length(); i++) {
                             frames.add(arry.getJSONObject(i).getInt("frame"));
@@ -154,8 +159,10 @@ public class ParseArgCalls {
 
                 StackInvocation stackInvocation = new StackInvocation(stack.getUid(),data);
                 for (String key : keys) {
-                    if(key.indexOf("hashCode")>-1){
-                        String value = classNameIndexer.get(json.getString("className"))+"."+json.getInt(key);
+                    if(key.indexOf("oId")>-1){
+
+                        String value = json.getString(key);
+
                         if(!bufferInvocations.containsKey(value)){
                             bufferInvocations.put(value,new ArrayList<>());
                         }
@@ -166,7 +173,7 @@ public class ParseArgCalls {
 
             HashSet<StackSet> uniqueStackSets = new HashSet<>();
             HashedLists<Integer,StackSetInvocation> stackSetInvocations = new HashedLists<>();
-            HashedSets<Integer,Integer> objectReferences = new HashedSets<>();
+            HashedSets<String,Integer> objectReferences = new HashedSets<>();
 
             StackSetBuilder stackSetBuilder = new StackSetBuilder();
 
@@ -181,9 +188,9 @@ public class ParseArgCalls {
 
                 stackSetInvocations.put(stackSet.getUid(),stackSetInvocation);
 
-                Set<String> objects =  getObjects.apply(stackSetInvocation);
+                Set<String> objects =  getTrackedObjectIds.apply(stackSetInvocation);
                 objects.forEach((objectHash)->{
-                    objectReferences.put(Integer.parseInt(objectHash),stackSet.getUid());
+                    objectReferences.put(objectHash,stackSet.getUid());
                 });
             });
 
@@ -198,42 +205,18 @@ public class ParseArgCalls {
                     .sorted((a,b)-> -(a.getValue().size() - b.getValue().size()))
                     .collect(Collectors.toList());
 
-            //write everything to the file :)
+            //write everything to the single file :)
             try (PrintStream writer = new PrintStream(new FileOutputStream(allDataOutput))){
                 writer.println("{");
-                writer.println("  \"frames\": [");
-                List<String> frames = frameIndex.getIndexedList();
-                for(int i=0; i<frames.size(); i++){
-                    if(i>0){
-                        writer.print(", ");
-                    }
-                    writer.print("\"");
-                    writer.print(frames.get(i));
-                    writer.print("\"");
-                }
-                writer.println("  ],");
-                writer.println("  \"classNames\": [");
-                List<String> classNames = classNameIndexer.getIndexedList();
-                for(int i=0; i<classNames.size(); i++){
-                    if(i>0){
-                        writer.print(", ");
-                    }
-                    writer.print("\"");
-                    writer.print(classNames.get(i));
-                    writer.print("\"");
-                }
-                writer.println("  ],");
-                writer.println("  \"threadNames\": [");
-                List<String> threadNames = threadNameIndex.getIndexedList();
-                for(int i=0; i<threadNameIndex.size(); i++){
-                    if(i>0){
-                        writer.print(", ");
-                    }
-                    writer.print("\"");
-                    writer.print(threadNames.get(i));
-                    writer.print("\"");
-                }
-                writer.println("  ],");
+                writer.print("  \"frames\": ");
+
+                writeStringList(writer,frameIndex.getIndexedList());
+
+
+                writer.println("  \"classNames\": ");
+                writeStringList(writer,classNameIndexer.getIndexedList());
+                writer.println("  \"threadNames\": ");
+                writeStringList(writer,threadNameIndex.getIndexedList());
                 writer.println("  \"stacks\": {");
                 for(Iterator<Map.Entry<Integer,Stack>> iter = uniqueStacks.entrySet().iterator(); iter.hasNext();){
                     Map.Entry<Integer,Stack> next = iter.next();
@@ -266,7 +249,6 @@ public class ParseArgCalls {
                             writer.print(",");
                         }
                     }
-
                     if(iter.hasNext()){
                         writer.print("    ],");
                     }else{
@@ -275,8 +257,8 @@ public class ParseArgCalls {
                 }
                 writer.println("  },");
                 writer.println("  \"objectsToSets\": {");
-                for(Iterator<Map.Entry<Integer,HashSet<Integer>>> iter = objectReferences.iterator(); iter.hasNext();){
-                    Map.Entry<Integer,HashSet<Integer>> next = iter.next();
+                for(Iterator<Map.Entry<String,HashSet<Integer>>> iter = objectReferences.iterator(); iter.hasNext();){
+                    Map.Entry<String,HashSet<Integer>> next = iter.next();
                     writer.print("    \""+next.getKey()+"\": "+next.getValue().toString());
                     if(iter.hasNext()){
                         writer.println(",");
@@ -293,5 +275,18 @@ public class ParseArgCalls {
         } finally {
 
         }
+    }
+
+    public static void writeStringList(PrintStream writer,List<String> list){
+        writer.println("[");
+        for(int i=0; i<list.size(); i++){
+            if(i>0){
+                writer.print(", ");
+            }
+            writer.print("\"");
+            writer.print(list.get(i));
+            writer.print("\"");
+        }
+        writer.println("  ],");
     }
 }
