@@ -112,6 +112,10 @@ public class JsonHelper extends Helper {
         return sb.toString();
     }
     public void traceJsonStack(Object key, String keyValues[]){
+        //default to not using a frameIndex map for the frames
+        traceJsonStack(key,false,keyValues);
+    }
+    public void traceJsonStack(Object key, boolean useFrameIndex, String keyValues[]){
         StackTraceElement stack[] = getStack();
         Thread thread = Thread.currentThread();
         StringBuilder sb = new StringBuilder();
@@ -150,10 +154,15 @@ public class JsonHelper extends Helper {
             StackTraceElement frame = stack[i];
 
             //trying without this blocking call to frameIndexer
-            int frameIndex = frameIndexer.add(frame.getClassName()+"."+frame.getMethodName());
+
             sb.append("{frame: ");
             //sb.append("\""+frame.getClassName()+"."+frame.getMethodName()+"\"");
-            sb.append(frameIndex);
+            if(useFrameIndex) {
+                int frameIndex = frameIndexer.add(frame.getClassName() + "." + frame.getMethodName());
+                sb.append(frameIndex);
+            }else{
+                sb.append("\""+frame.getClassName()+"."+frame.getMethodName()+"\"");
+            }
             sb.append(", ");
             if(frame.getFileName()!=null){
                 sb.append("file: \"");
