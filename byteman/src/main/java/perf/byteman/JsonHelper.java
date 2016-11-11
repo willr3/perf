@@ -112,8 +112,8 @@ public class JsonHelper extends Helper {
         return sb.toString();
     }
     public void traceJsonStack(Object key, String keyValues[]){
-        //default to not using a frameIndex map for the frames
-        traceJsonStack(key,false,keyValues);
+        //default to using a frameIndex map for the frames
+        traceJsonStack(key,true,keyValues);
     }
     public void traceJsonStack(Object key, boolean useFrameIndex, String keyValues[]){
         StackTraceElement stack[] = getStack();
