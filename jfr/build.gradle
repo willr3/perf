@@ -1,0 +1,39 @@
+version '0.0.1'
+
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.jboss.aesh:aesh:0.66.14'
+
+    compile project(':util')
+    compile fileTree(dir: 'lib', include: '*.jar')
+
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+}
+compileJava {
+
+}
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'Jfr inspector', 'Implementation-Version': version, 'Main-Class': 'RunLoadRecord'
+    }
+}
+
+task uberjar(type: Jar , dependsOn : "compileJava") {
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    manifest {
+        attributes 'Implementation-Title': 'Jfr inspector', 'Implementation-Version': version
+        attributes 'Main-Class': 'RunLoadRecord'
+    }
+    with jar
+}
+
