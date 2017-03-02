@@ -445,7 +445,13 @@ public class FileUtility {
     }
     public static boolean isArchive(File file) {
         String n = file.getName();
-        if ( n.endsWith(".zip") || n.endsWith(".tar") || n.endsWith("tar.gz") || n.endsWith(".tgz") || n.endsWith(".Z") || n.endsWith(".jar") || n.endsWith(".bzip2") ) {
+        if (   n.endsWith(".zip")
+            || n.endsWith(".tar")
+            || n.endsWith("tar.gz")
+            || n.endsWith(".tgz")
+            || n.endsWith(".Z")
+            || n.endsWith(".jar")
+            || n.endsWith(".bzip2") ) {
             return true;
         }
         return false;

@@ -12,15 +12,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Counters<T> implements Serializable{
 
     private ConcurrentHashMap<T,AtomicInteger> counts;
-
+    private AtomicInteger sum;
     public Counters() {
-        counts = new ConcurrentHashMap<>();
+        counts = new ConcurrentHashMap<>();sum = new AtomicInteger(0);
     }
     public void add(T t) {
         if(!contains(t)) {
             counts.put(t,new AtomicInteger(0));
         }
         counts.get(t).incrementAndGet();
+        sum.incrementAndGet();
     }
 
     public boolean contains(T t) {
@@ -34,6 +35,7 @@ public class Counters<T> implements Serializable{
             return 0;
         }
     }
+    public int sum(){return sum.get();}
     public int size(){return counts.size();}
     public List<T> entries(){
         return Arrays.asList((T[]) counts.keySet().toArray());
