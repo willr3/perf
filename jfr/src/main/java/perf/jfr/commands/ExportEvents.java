@@ -14,9 +14,11 @@ import org.jboss.aesh.cl.Arguments;
 import org.jboss.aesh.cl.CommandDefinition;
 import org.jboss.aesh.cl.Option;
 import org.jboss.aesh.cl.OptionList;
+import org.jboss.aesh.cl.completer.OptionCompleter;
 import org.jboss.aesh.console.command.Command;
 import org.jboss.aesh.console.command.CommandException;
 import org.jboss.aesh.console.command.CommandResult;
+import org.jboss.aesh.console.command.completer.CompleterInvocation;
 import org.jboss.aesh.console.command.invocation.CommandInvocation;
 import org.json.JSONObject;
 import perf.jfr.EventFields;
@@ -126,6 +128,20 @@ public class ExportEvents implements Command<CommandInvocation> {
         return buffer.toString();
     };
 
+    public static class TypeCompleter  implements OptionCompleter<CompleterInvocation> {
+
+        private static final List<String> supported = Arrays.asList("csv","json");
+
+        @Override
+        public void complete(CompleterInvocation completerInvocation) {
+            supported.forEach((type)->{
+                if(type.startsWith(completerInvocation.getGivenCompleteValue())){
+                    completerInvocation.addCompleterValue(type);
+                }
+            });
+        }
+    }
+
 
     @Option(name="event",shortName = 'e',completer = EventCompleter.class, required = true, description = "which event to export from the jfr")
     String eventTargetPath;
@@ -133,7 +149,10 @@ public class ExportEvents implements Command<CommandInvocation> {
     @Option(name="output",shortName = 'o', required = false, description = "the output file for exporting the events, defaults to terminal")
     String outputPath;
 
-    @Option(name="type",shortName = 't', description = "output format [csv,json]",defaultValue = {"csv"})
+
+
+
+    @Option(name="type",shortName = 't', description = "output format [csv,json]",defaultValue = {"csv"}, completer = TypeCompleter.class)
     String outputType;
 
     @OptionList(name="fields",shortName = 'f',required = false, description = "the fields to export from the specified events (if they exist)")
@@ -171,6 +190,11 @@ public class ExportEvents implements Command<CommandInvocation> {
             return CommandResult.FAILURE;
         }
 
+
+
+
+
+
         PrintStream outStream = null;//commandInvocation.getShell().out();
 
         if(outputPath != null){
@@ -202,15 +226,28 @@ public class ExportEvents implements Command<CommandInvocation> {
 
         IView view = record.createView();
 
-        StringBuffer header = new StringBuffer();
-        for(int i=0; i<fields.size(); i++){
-            if(i>0){
-                header.append(",");
-            }
-            header.append(fields.get(i));
+        BiFunction<NestedMap<String,String>,Integer,String> outputTarget;
+        switch (outputType){
+            case "csv":
+                outputTarget = csvFunction;
+                StringBuffer header = new StringBuffer();
+                for(int i=0; i<fields.size(); i++){
+                    if(i>0){
+                        header.append(",");
+                    }
+                    header.append(fields.get(i));
+                }
+                out.println(header.toString());
+                break;
+            case "json":
+                outputTarget = jsonFunction;
+                out.println("{");
+                break;
+            default:
+                outputTarget = csvFunction;
         }
-        out.println(header.toString());
-        header = null;
+
+        final BiFunction<NestedMap<String,String>,Integer,String> outputFunction = outputTarget;
 
         view.forEach((event)->{
             String eventTypePath = event.getEventType().getPath();
@@ -334,60 +371,21 @@ public class ExportEvents implements Command<CommandInvocation> {
                     }
                 }
                 //commandInvocation.getShell().out().println("{\n"+dataMap.toString()+"}");
-                commandInvocation.getShell().out().println(jsonFunction.apply(dataMap,2));
+                commandInvocation.getShell().out().println(outputFunction.apply(dataMap,2));
             }
-
-
 
         });
 
-//        view.forEach((event)->{
-//            String eventTypePath = event.getEventType().getPath();
-//            if(eventTargetPath.equals(eventTypePath)){
-//                StringBuilder sb = new StringBuilder();
-//                for(int i=0; i<fields.size(); i++){
-//                    if(i>0){
-//                        sb.append(",");
-//                    }
-//                    Object value = event.getValue(fields.get(i));
-//                    String valueType = value == null ? "null" : value.getClass().getName();
-//                    switch(valueType){
-//                        case "null":
-//                            break;
-//                        case "java.lang.Boolean":
-//                        case "java.lang.Long":
-//                        case "java.lang.Integer":
-//                        case "java.lang.String":
-//                            sb.append(value.toString());
-//                            break;
-//                        case "java.lang.Float":
-//                            sb.append(String.format("%.3f", (Float)value));
-//                            break;
-//                        case "java.lang.Double":
-//                            sb.append(String.format("%.3f", (Double)value));
-//                            break;
-//                        case "com.jrockit.mc.flightrecorder.internal.model.FLRThread":
-//                            FLRThread thread = (com.jrockit.mc.flightrecorder.internal.model.FLRThread)value;
-//                            String threadName = thread.getName();
-//                            String threadGroup = thread.getThreadGroup();
-//                            long javaId = thread.getJavaId();
-//                            long platformId = thread.getPlatformId();
-//                            long threadId = thread.getThreadId();
-//                            String threadState = thread.getThreadState();
-//                            sb.append("javaId=["+javaId+"], platformId=["+platformId+"]: threadId=["+threadId+"]: state="+threadState+"]: name="+threadName+"]: group=["+threadGroup+"]:");
-//                            break;
-//                        case "com.jrockit.mc.flightrecorder.internal.model.FLRStackTrace":
-//                            FLRStackTrace stackTrace = (com.jrockit.mc.flightrecorder.internal.model.FLRStackTrace)value;
-//                            FLRFrame almostThreadRootFrame = stackTrace.getAlmostThreadRootFrame();
-//                            List<? extends IMCFrame> frames = stackTrace.getFrames();
-//
-//                        deault:
-//                            System.err.println("missing type for "+valueType);
-//                    }
-//                }
-//                out.println(sb.toString());
-//            }
-//        });
+        switch (outputType){
+            case "csv":
+                break;
+            case "json":
+                out.println("}");
+                break;
+            default:
+        }
+
+
 
         return CommandResult.SUCCESS;
     }
