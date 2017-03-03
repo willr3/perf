@@ -33,6 +33,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -249,6 +250,7 @@ public class ExportEvents implements Command<CommandInvocation> {
 
         final BiFunction<NestedMap<String,String>,Integer,String> outputFunction = outputTarget;
 
+        final AtomicBoolean isFirst = new AtomicBoolean(true);
         view.forEach((event)->{
             String eventTypePath = event.getEventType().getPath();
             if(eventTargetPath.equals(eventTypePath)){
@@ -371,7 +373,12 @@ public class ExportEvents implements Command<CommandInvocation> {
                     }
                 }
                 //commandInvocation.getShell().out().println("{\n"+dataMap.toString()+"}");
-                commandInvocation.getShell().out().println(outputFunction.apply(dataMap,2));
+                if(!isFirst.get()){
+                    out.print(" , ");
+                }else{
+                    isFirst.set(false);
+                }
+                out.println(outputFunction.apply(dataMap,2));
             }
 
         });
