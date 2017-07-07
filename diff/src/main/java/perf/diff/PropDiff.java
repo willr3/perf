@@ -123,7 +123,7 @@ public class PropDiff {
 //                    if( (file.toString().endsWith("properties") || file.toString().endsWith("env") ) && !(file.toString().contains("freeform") || file.toString().contains("vertical") || file.toString().contains("agent") ) ){
 //
 //                        System.out.println("++ = "+file.toString());
-//                        diff.loadLeft(file);
+//                        diff.loadFrom(file);
 //                    }else{
 //                        System.out.println("-- = "+file.toString());
 //                    }
@@ -136,7 +136,7 @@ public class PropDiff {
 //                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 //                    if( (file.toString().endsWith("properties") || file.toString().endsWith("env") ) && !(file.toString().contains("freeform") || file.toString().contains("vertical") || file.toString().contains("agent") ) ){
 //                        System.out.println("++ = " + file.toString());
-//                        diff.loadRight(file);
+//                        diff.loadTo(file);
 //                    } else {
 //                        System.out.println("-- = " + file.toString());
 //                    }

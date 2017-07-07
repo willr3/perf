@@ -3,7 +3,6 @@ package perf.diff;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by wreicher
@@ -561,8 +560,8 @@ public class XmlDiffTest {
         diff.addKeyAttribute("module");
         diff.addKeyAttribute("category");
 
-        diff.loadLeft("L",xml1);
-        diff.loadRight("R",xml2);
+        diff.loadFrom("L",xml1);
+        diff.loadTo("R",xml2);
 
         List<Diff> diffs = diff.getDiff();
 

@@ -30,6 +30,9 @@ public class XmlDiff{
     public static final String ANSI_CYAN = "\u001B[36m";
     public static final String ANSI_WHITE = "\u001B[37m";
 
+
+    public static final String EMPTY = ANSI_BLACK+"⋯"+ANSI_RESET;
+
     private String leftPath;
     private String rightPath;
 
@@ -60,31 +63,35 @@ public class XmlDiff{
     public void addVersionAttribute(String attribute,int versionLength){
         versionedAttributes.put(attribute,versionLength);
     }
-    public void loadLeft(Path path){
-        loadLeft("left",path);
+    public void loadFrom(Path path){
+        loadFrom("left",path);
     }
-    public void loadLeft(String aKey, Path path){
-        leftShort = aKey;
+    public void loadFrom(String key, Path path){
+        leftShort = key;
         left = loader.loadDocument(path);
     }
-    public void loadLeft(String key,String xml){
+    public void loadFrom(String key, String xml){
         leftShort = key;
         left = loader.loadDocument(xml);
     }
 
-    public void loadRight(Path path) {
-        loadRight("right",path);
+    public void loadTo(Path path) {
+        loadTo("right",path);
     }
-    public void loadRight(String key, Path path){
+    public void loadTo(String key, Path path){
         rightShort = key;
         right = loader.loadDocument(path);
     }
-    public void loadRight(String key,String xml){
+    public void loadTo(String key, String xml){
         rightShort = key;
         right = loader.loadDocument(xml);
     }
 
     public List<Diff> getDiff(){
+        if(left == null || right == null){
+            System.out.println("Missing input file for comparison");
+            return Collections.emptyList();
+        }
         LinkedList<Diff> rtrn = new LinkedList<Diff>();
 
         Node ra = left.getDocumentElement();
@@ -252,9 +259,11 @@ public class XmlDiff{
         for(Diff d : diffs){
 
             System.out.println(ANSI_BLUE+d.getLocation()+ANSI_RESET);
-            System.out.printf("%-14s\n",d.getOperation().toString());
-            System.out.printf("  %-16s  %s\n", leftShort,d.getLeft());
-            System.out.printf("  %-16s  %s\n", rightShort,d.getRight());
+            System.out.printf(ANSI_RED+"%-14s\n"+ANSI_RESET,d.getOperation().toString());
+            System.out.printf("%-16s %n",leftShort);
+            System.out.printf("%s\n",( d.getLeft().isEmpty()?EMPTY:d.getLeft()) );
+            System.out.printf("%-16s %n",rightShort);
+            System.out.printf("%s\n",( d.getRight().isEmpty()?EMPTY:d.getRight()) );
         }
     }
     private String xmlString(Node n,boolean indent){
@@ -398,10 +407,10 @@ public class XmlDiff{
         diff.addVersionAttribute("xmlns", 3);
         diff.addKeyAttribute("module");
         diff.addKeyAttribute("category");
-        //diff.loadLeft( "CR4", new File("/home/wreicher/specWork/wildfly-10.0.0.CR4_specjms.standalone-full-ha-netty-nio-aio.xml").toPath());
-        //diff.loadRight("FNL", new File("/home/wreicher/specWork/wildfly-10.0.0.Final.standalone-specjms.xml").toPath());
-        diff.loadLeft  ("Svr",new File("/home/wreicher/runtime/wildfly-10.0.0.Final-server-domain/domain/configuration/domain.xml").toPath());
-        diff.loadRight ("Fnl",new File("/home/wreicher/runtime/wildfly-10.0.0.Final/domain/configuration/domain.xml").toPath());
+        //diff.loadFrom( "CR4", new File("/home/wreicher/specWork/wildfly-10.0.0.CR4_specjms.standalone-full-ha-netty-nio-aio.xml").toPath());
+        //diff.loadTo("FNL", new File("/home/wreicher/specWork/wildfly-10.0.0.Final.standalone-specjms.xml").toPath());
+        diff.loadFrom( "base",new File("/home/wreicher/perfWork/amq/jdbc/run-30-1499406726806/benchserver4/standalone-full-ha-jdbc-store.xml").toPath());
+        diff.loadTo( "chng",new File("/home/wreicher/perfWork/amq/jdbc/run-30-1499434095520/benchserver4/standalone-full-ha-jdbc-store.xml").toPath());
 
         List<Diff> diffs = diff.getDiff();
         System.out.println("diffs:");
