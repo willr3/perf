@@ -8,6 +8,7 @@ import org.xml.sax.SAXException;
 import perf.util.file.FileUtility;
 import perf.util.hash.HashFactory;
 
+import javax.print.Doc;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -105,7 +106,14 @@ public class XmlLoader {
         }
         return Collections.unmodifiableList(rtrn);
     }
-
+    public Xml loadXml(String content){
+        Document document = loadDocument(content);
+        return new Xml(document.getDocumentElement());
+    }
+    public Xml loadXml(Path path){
+        Document document = loadDocument(path);
+        return new Xml(document.getDocumentElement());
+    }
     public Document loadDocument(String document){
         Document rtrn = null;
         try {

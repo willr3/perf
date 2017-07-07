@@ -9,14 +9,23 @@ import java.util.function.Function;
 public class AsciiArt {
 
     public static final String ANSI_RESET = "\u001B[0m";
+
     public static final String ANSI_BLACK = "\u001B[30m";
     public static final String ANSI_RED = "\u001B[31m";
     public static final String ANSI_GREEN = "\u001B[32m";
     public static final String ANSI_YELLOW = "\u001B[33m";
     public static final String ANSI_BLUE = "\u001B[34m";
-    public static final String ANSI_PURPLE = "\u001B[35m";
+    public static final String ANSI_MAGENTA = "\u001B[35m";
     public static final String ANSI_CYAN = "\u001B[36m";
-    public static final String ANSI_WHITE = "\u001B[37m";
+    public static final String ANSI_LIGHT_GREY = "\u001B[37m";
+    public static final String ANSI_DARK_GREY = "\u001B[90m";
+    public static final String ANSI_LIGHT_RED = "\u001B[91m";
+    public static final String ANSI_LIGHT_GREEN = "\u001B[92m";
+    public static final String ANSI_LIGHT_YELLOW = "\u001B[93m";
+    public static final String ANSI_LIGHT_BLUE = "\u001B[94m";
+    public static final String ANSI_LIGHT_MAGENTA = "\u001B[95m";
+    public static final String ANSI_LIGHT_CYAN = "\u001B[96m";
+    public static final String ANSI_WHITE = "\u001B[97m";
 
     private static String KMG_SUFFIX = "KMGTPEZY";
     public static String CHECKED = "✓";
@@ -34,6 +43,7 @@ public class AsciiArt {
     public static String TREE_OFFSET_SUB_CHILD = " │ ";
     public static String TREE_CHILD =            " ├ ";
     public static String TREE_CHILD_LAST =       " └ ";
+    public static String ELLIPSIS = "…";
 
     public static String printKMG(double bytes){
         return printKMG(bytes,2);
@@ -51,6 +61,11 @@ public class AsciiArt {
     public static String termGoto(int row,int column){
         return "\u001b["+row+";"+column+"H";
         //return "\u001B["+row+";"+column+"H";
+    }
+
+
+    public static void main(String[] args) {
+        System.out.println("testing \033[0;37;41mCOLOR1\033[1;35;44mCOLOR2\033[m");
     }
 
     public static char horiz(double value){

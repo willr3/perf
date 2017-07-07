@@ -17,11 +17,14 @@ public class Counters<T> implements Serializable{
         counts = new ConcurrentHashMap<>();sum = new AtomicInteger(0);
     }
     public void add(T t) {
+        add(t,1);
+    }
+    public void add(T t,int amount) {
         if(!contains(t)) {
             counts.put(t,new AtomicInteger(0));
         }
-        counts.get(t).incrementAndGet();
-        sum.incrementAndGet();
+        counts.get(t).addAndGet(amount);
+        sum.addAndGet(amount);
     }
 
     public boolean contains(T t) {
@@ -38,7 +41,7 @@ public class Counters<T> implements Serializable{
     public int sum(){return sum.get();}
     public int size(){return counts.size();}
     public List<T> entries(){
-        return Arrays.asList((T[]) counts.keySet().toArray());
+        return Arrays.asList(((T[]) counts.keySet().toArray()));
 
     }
 }

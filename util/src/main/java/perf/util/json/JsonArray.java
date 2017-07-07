@@ -2,6 +2,8 @@ package perf.util.json;
 
 import org.json.JSONArray;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -54,6 +56,14 @@ public class JsonArray {
             Jsons j = new Jsons(obj.getJSONObject(i));
             action.accept(j,i);
         }
+    }
+    public List<Jsons> toList(){
+        LinkedList<Jsons> rtrn = new LinkedList<>();
+        for(int i=0; i<obj.length();i++){
+            Jsons j = new Jsons(obj.getJSONObject(i));
+            rtrn.add(j);
+        }
+        return rtrn;
     }
 
 }

@@ -5,6 +5,14 @@ package perf.util;
  */
 public class StringUtil {
 
+    public static int countOccurances(String toFind,String target){
+        int count = 0;
+        int index = -1;
+        while( (index=target.indexOf(toFind,index+1))>-1){
+            count++;
+        }
+        return count;
+    }
     public static String durationToString(long duration){
         long _ms = duration % 1000;
         duration = duration / 1000;

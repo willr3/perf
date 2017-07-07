@@ -13,8 +13,21 @@ public class HashedList<V> {
     private LinkedList<V> data;
 
     public HashedList(){
+        this(Collections.emptyList());
+    }
+    public HashedList(List<V> values){
         this.seen = new HashSet<V>();
         this.data = new LinkedList<V>();
+        addAll(values);
+    }
+    public boolean addAll(Collection<V> values){
+        boolean rtrn = true;
+        if(!values.isEmpty()){
+            for(V v : values){
+                rtrn = rtrn && add(v);
+            }
+        }
+        return rtrn;
     }
     public boolean add(V value){
         if(seen.contains(value)){
@@ -28,6 +41,26 @@ public class HashedList<V> {
             data.add(value);
             return true;
         }
+    }
+    public boolean removeAll(Collection<V> values){
+        boolean rtrn = true;
+        if(!values.isEmpty()){
+            for(V v : values){
+                rtrn = rtrn && remove(v);
+            }
+        }
+        return rtrn;
+    }
+
+    public boolean remove(V value){
+        if(seen.contains(value)){
+            synchronized (this) {
+                seen.remove(value);
+                data.remove(value);
+            }
+            return true;
+        }
+        return false;
     }
     public boolean contains(V value){
         return seen.contains(value);

@@ -10,6 +10,7 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.z.ZCompressorInputStream;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import perf.util.Sets;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -21,10 +22,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by wreicher
@@ -36,6 +34,13 @@ public class FileUtility {
     public static final String ARCHIVE_KEY = "#";
     public static final String SEARCH_KEY = ">";
     public static final String REMOTE_KEY = ":";
+
+    public static int OPERATION_LENGTH = 2;
+    public static final String ADD_OPERATION = "++";
+    public static final String DELETE_OPERATION = "--";
+    public static final String SET_OPERATION = "==";
+
+    public static final Set<String> OPERATIONS = Collections.unmodifiableSet(Sets.of(ADD_OPERATION,DELETE_OPERATION,SET_OPERATION));
 
     /**
      * Get a <code>List</code> of all the files in baseDir that contain nameSubstring
@@ -419,6 +424,7 @@ public class FileUtility {
     public static void writeObjectFile(String fileName,Object object){
         writeObjectFile(new File(fileName),object);
     }
+
     public static void writeObjectFile(File file,Object object){
         ObjectOutputStream oos = null;
         try{
