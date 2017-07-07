@@ -5,6 +5,7 @@ import perf.parse.internal.CheatChars;
 import perf.parse.internal.JsonBuilder;
 import perf.util.json.Jsons;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -16,12 +17,24 @@ public class Parser {
 
     private List<JsonConsumer> consumers;
     private LinkedList<Exp> patterns;
+    private HashMap<String,Boolean> states;
     private JsonBuilder builder;
 
     public Parser(){
         consumers = new LinkedList<JsonConsumer>();
         patterns = new LinkedList<Exp>();
         builder = new JsonBuilder();
+        states = new HashMap<>();
+    }
+
+    public void setState(String state,boolean value){
+        states.put(state,value);
+    }
+    public boolean getState(String state){
+        if(!states.containsKey(state)){
+            states.put(state,false);
+        }
+        return states.get(state);
     }
 
     public JSONObject getNames(){
@@ -42,6 +55,7 @@ public class Parser {
     public void add(JsonConsumer consumer){
         consumers.add(consumer);
     }
+    public void clearConsumers(){consumers.clear();}
 
     public boolean test(CharSequence line){
         for(Exp pattern : patterns){

@@ -30,6 +30,9 @@ public class Exp {
     private LinkedHashMap<String,String> fieldValues; //Map<Name,Value|name of value for KeyValue pair>
 
     private LinkedHashSet<Rule> rules;
+    private LinkedHashSet<String> enables;
+    private LinkedHashSet<String> disables;
+    private LinkedHashSet<String> requires;
 
     private enum GroupType {Name,Extend,Key};
 
@@ -71,6 +74,10 @@ public class Exp {
         this.grouping = new LinkedHashMap<>();
 
         this.children = new LinkedList<>();
+
+        this.enables = new LinkedHashSet<>();
+        this.disables = new LinkedHashSet<>();
+        this.requires = new LinkedHashSet<>();
 
     }
 
@@ -318,7 +325,35 @@ public class Exp {
         boolean result = applyWithStart(line,builder,parser,0);
         return result;
     }
+
+    public Exp enables(String state){
+        this.enables.add(state);
+        return this;
+    }
+    public Exp disables(String state){
+        this.disables.add(state);
+        return this;
+    }
+    public Exp requires(String state){
+        this.requires.add(state);
+        return this;
+    }
+
     private boolean applyWithStart(CheatChars line,JsonBuilder builder,Parser parser,int start){
+
+        //TODO enable disable Exp with a boolean state? allows state dependent parsers similar to child parsers but for other lines
+        //Parser would maintain the "state" of what is enabled / disabled and the expression would check if it is enabled
+
+        if(!this.requires.isEmpty()){
+            boolean satisfyRequired = true;
+            for(String required : requires){
+                satisfyRequired = satisfyRequired & parser.getState(required);
+            }
+            if( !satisfyRequired ){
+                return false;
+            }
+        }
+
         if(isDebug()){
             System.out.println(this.getName()+" "+start+": line = "+line);
             System.out.println(builder.getRoot().toString(2));
@@ -335,6 +370,7 @@ public class Exp {
             if(isDebug()){
                 System.out.printf("%10s found match\n",this.getName());
             }
+
             rtrn = true;
             if ( is(Merge.NewStart) ) {
                 if(isDebug()){System.out.printf("%10s NewStart\n",this.getName());}
@@ -494,6 +530,14 @@ public class Exp {
                 for (MatchAction action : callbacks) {
                     action.onMatch(target, this, parser);
                 }
+            }
+
+            //update the parser states after looping
+            if(!disables.isEmpty()){
+                disables.forEach((disable)->parser.setState(disable,false));
+            }
+            if(!enables.isEmpty()){
+                enables.forEach(((enable)->parser.setState(enable,true)));
             }
 
             if( is(Rule.PopContext) ) {

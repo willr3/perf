@@ -24,21 +24,14 @@ import java.util.function.Consumer;
 public class DstatFactory {
 
 
-    public static final String ANSI_RESET =  "\u001B[0m";
-    public static final String ANSI_BLACK =  "\u001B[30m";
-    public static final String ANSI_RED =    "\u001B[31m";
-    public static final String ANSI_GREEN =  "\u001B[32m";
-    public static final String ANSI_YELLOW = "\u001B[33m";
-    public static final String ANSI_BLUE =   "\u001B[34m";
-    public static final String ANSI_PURPLE = "\u001B[35m";
-    public static final String ANSI_CYAN =   "\u001B[36m";
-    public static final String ANSI_WHITE =  "\u001B[37m";
+    //public static final String ANSI_RESET =  "\u001B[0m";
 
     private final ArrayList<String> headers = new ArrayList<String>();
 
     private MatchAction headerMatch = new MatchAction() {
         @Override
         public void onMatch(JSONObject match, Exp pattern, Parser parser) {
+            System.out.println(match.toString(2));
             JSONArray arry = match.getJSONArray("header");
             for(int i=0; i<arry.length(); i++){
                 String header = arry.getString(i);
@@ -118,7 +111,11 @@ public class DstatFactory {
     };
 
 
-
+    public Exp defaultMessageExp(){
+        return new Exp("default","You did not select any stats, using -cdngy by default")
+            .set(Merge.NewStart)
+            .eat(Eat.Line);
+    }
     public Exp headerGroupExp(){
         return new Exp("header","[ ]?[\\-]{1,}(?<header>[^ \\-]+(:?[\\-\\/]?[^ \\-\\/]+)*)[\\- ]{1}")
             .set(Merge.NewStart)
@@ -138,9 +135,9 @@ public class DstatFactory {
 
     public static void main(String[] args) {
         LinkedHashMap<String,String> rEntrantDstatPaths = new LinkedHashMap<>();
-        rEntrantDstatPaths.put("client1","/home/wreicher/specWork/reentrant/reentrant-aio-196/client1.dstat.log");
-        rEntrantDstatPaths.put("client4","/home/wreicher/specWork/reentrant/reentrant-aio-196/client4.dstat.log");
-        rEntrantDstatPaths.put("server2","/home/wreicher/specWork/reentrant/reentrant-aio-196/server2.dstat.log");
+//        rEntrantDstatPaths.put("client1","/home/wreicher/specWork/reentrant/reentrant-aio-196/client1.dstat.log");
+//        rEntrantDstatPaths.put("client4","/home/wreicher/specWork/reentrant/reentrant-aio-196/client4.dstat.log");
+        rEntrantDstatPaths.put("server4","/home/wreicher/perfWork/amq/jdbc/00259/dstat.log");
 
         for(String fKey : rEntrantDstatPaths.keySet()){
             String fPath = rEntrantDstatPaths.get(fKey);
@@ -153,8 +150,10 @@ public class DstatFactory {
             StringBuilder v = new StringBuilder();
             StringBuilder h = new StringBuilder();
 
+            p.add(f.defaultMessageExp());
             p.add(f.headerGroupExp());
             p.add(f.columnGroupExp());
+
 
             p.add(new JsonConsumer() {
                 @Override

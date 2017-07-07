@@ -30,7 +30,7 @@ public class LinearRegressionConsumer implements JsonConsumer {
         public Double apply(Jsons jsonObject) {
             Double value = jsonObject.optDouble(key);
             if(value.isNaN()){
-                System.out.println(jsonObject.toString(2));
+                //System.out.println(jsonObject.toString(2));
             }
             return value;
         }
@@ -86,11 +86,14 @@ public class LinearRegressionConsumer implements JsonConsumer {
 
         r.addParser(p);
 
-        List<String> files = FileUtility.getFiles("/home/wreicher/specWork",".gclog",true);
+        List<String> files = FileUtility.getFiles("/home/wreicher/perfWork/amq/jdbc/00259/client1/",".gclog",true);
 
         files.clear();
-        files.add("/home/wreicher/specWork/server.256Q.gclog");
-        files.add("/home/wreicher/specWork/server.258A.gclog");
+
+        files.add("/home/wreicher/perfWork/amq/jdbc/00259/client1/specjms.verbose-gc-dc.gclog");
+        files.add("/home/wreicher/perfWork/amq/jdbc/00259/client1/specjms.verbose-gc-hq.gclog");
+        files.add("/home/wreicher/perfWork/amq/jdbc/00259/client1/specjms.verbose-gc-sm.gclog");
+        files.add("/home/wreicher/perfWork/amq/jdbc/00259/client1/specjms.verbose-gc-sp.gclog");
 
         for(String file : files){
             System.out.println(AsciiArt.ANSI_BLUE+file+AsciiArt.ANSI_RESET);
