@@ -41,7 +41,7 @@ public class ParseArgCalls {
 
         //Inputs
         String perfWork = "/home/wreicher/perfWork/byteBuffer/";
-        String workFolder = Paths.get(perfWork,"10B-MR").toString();//"/home/wreicher/perfWork/byteBuffer/9O-AMQBuffer/";
+        String workFolder = Paths.get(perfWork,"llJ-131c43a-btm").toString();//"/home/wreicher/perfWork/byteBuffer/9O-AMQBuffer/";
         String btmLogPath = Paths.get(workFolder,"argCalls.log").toString();
 
         String frameIndexPath = Paths.get(workFolder,"frameIndex.json").toString();

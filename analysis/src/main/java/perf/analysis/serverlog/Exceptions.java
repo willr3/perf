@@ -36,8 +36,8 @@ public class Exceptions implements JsonConsumer{
 
     @Override
     public void consume(Jsons object) {
-        if(object.has("stack") && object.has("message") && object.getString("message").contains("refCnt")){
-            //System.out.println(object.toString(2));
+        if(object.has("stack") && object.has("message")){
+
             Jsons target = object;
             Frame root = new Frame(-1);
             Frame currentFrame = root;
@@ -49,10 +49,10 @@ public class Exceptions implements JsonConsumer{
                     boolean isNewFrame = frames.get(o.getString("frame")) < 0;
                     if(isNewFrame){
 
-                    }else{
-                        int frameId = frames.add(o.getString("frame"));
-                        currentFrame = currentFrame.addChild(frameId);
                     }
+                    int frameId = frames.add(o.getString("frame"));
+                    currentFrame = currentFrame.addChild(frameId);
+
                 }
                 if(target.has("causedBy")){
 
@@ -76,21 +76,22 @@ public class Exceptions implements JsonConsumer{
         filePath = "/home/wreicher/specWork/reentrant/reentrant-aio-196/log/server.log";
         filePath = "/home/wreicher/specWork/server.246Y.log";
         filePath = "/home/wreicher/runtime/wildfly-10.0.0.Final-pool/standalone/log/server.log";
-
-        String frameIndexPath = "/home/wreicher/perfWork/byteBuffer/frameIndex.json";
+        filePath = "/home/wreicher/perfWork/byteBuffer/10E-MR/server.log";
+        filePath = "/home/wreicher/perfWork/insurance/server.log";
+        //String frameIndexPath = "/home/wreicher/perfWork/byteBuffer/frameIndex.json";
 
         JSONArray jsonArray = null;
         Indexer<String> frameIndex = new Indexer<>();
-        jsonArray = FileUtility.readJsonArrayFile(frameIndexPath);
+        jsonArray = new JSONArray();//FileUtility.readJsonArrayFile(frameIndexPath);
         System.out.println("  frames : " + AsciiArt.ANSI_CYAN + jsonArray.length() + AsciiArt.ANSI_RESET);
         for (int i = 0; i < jsonArray.length(); i++) {
             frameIndex.add(jsonArray.getString(i));
         }
+        jsonArray = null;
 
-
-        JSONObject allData = FileUtility.readJsonObjectFile("/home/wreicher/perfWork/byteBuffer/9O-AMQBuffer/allData.json");
-        System.out.println("allData");
-        System.out.println(allData.keySet());
+//        JSONObject allData = FileUtility.readJsonObjectFile("/home/wreicher/perfWork/byteBuffer/9O-AMQBuffer/allData.json");
+//        System.out.println("allData");
+//        System.out.println(allData.keySet());
 
         Exceptions c = new Exceptions(frameIndex);
 
@@ -120,7 +121,6 @@ public class Exceptions implements JsonConsumer{
         AsciiArt.TREE_OFFSET_SUB_CHILD = "";
         AsciiArt.TREE_CHILD            = "";
         AsciiArt.TREE_CHILD_LAST       = "";
-
 
         c.frameFrequency.entries().forEach(f->{
             System.out.println(c.frameFrequency.count(f)+" -> "+f.toString());

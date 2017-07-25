@@ -89,7 +89,7 @@ public class Shell {
         //System.out.println("..start "+sentCommand+" ->"+rtrn);
         if(rtrn.startsWith(sentCommand)){
             rtrn = rtrn.substring(sentCommand.length());
-            //do not trim here in case prompt has spaces
+            //do not trimEmptyText here in case prompt has spaces
         }
         if(rtrn.endsWith(prompt)) {
             rtrn = rtrn.substring(0,rtrn.length()-prompt.length()).trim();
@@ -133,7 +133,7 @@ public class Shell {
         try {
             jsch.setKnownHosts("~/.ssh/known_hosts");
             jsch.addIdentity("~/.ssh/id_rsa");
-            Session session = jsch.getSession("wreicher","127.0.0.1",22);
+            Session session = jsch.getSession("benchuser","benchclient1.perf.lab.eng.rdu.redhat.com",22);
             session.setConfig(cfg);
             session.connect(10*000);
 
@@ -147,9 +147,11 @@ public class Shell {
             Shell shell = new Shell(csh,semaphore);
 
 
-            shell.sh("pwd");
-            shell.sh("dstat 1 10");
+            shell.sh("hostname");
+            shell.sh("dstat 1 20 & export DSTAT_ID=$!" );
             Thread.sleep(100);
+            shell.sh("echo $DSTAT_ID");
+            shell.sh("ps -ef | grep dstat");
             for(int i=0; i<10; i++){
                 System.out.println("--------------------");
                 Thread.sleep(500);

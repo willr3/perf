@@ -4,6 +4,7 @@ import java.util.function.UnaryOperator;
 
 /**
  * Created by wreicher
+ * This is just a UnaryOperator, why did I extend it?
  */
 public interface Line extends UnaryOperator<String> {
     Line EMPTY = (input) -> { return ""; };

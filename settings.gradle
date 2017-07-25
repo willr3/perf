@@ -11,4 +11,8 @@ include 'stack'
 include 'wildfly'
 include 'reflect'
 //findProject(':reflect')?.name = 'perf.reflect'
+include 'netty'
+include 'ast'
+include 'jfr'
+include 'ssh'
 

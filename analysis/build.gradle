@@ -12,6 +12,7 @@ repositories {
 dependencies {
     compile project(':diff')
     compile project(':parse')
+    compile project(':ssh')
     compile project(':stack')
     compile project(':util')
     compile project(':byteman')

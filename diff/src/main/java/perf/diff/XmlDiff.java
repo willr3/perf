@@ -407,10 +407,17 @@ public class XmlDiff{
         diff.addVersionAttribute("xmlns", 3);
         diff.addKeyAttribute("module");
         diff.addKeyAttribute("category");
-        //diff.loadFrom( "CR4", new File("/home/wreicher/specWork/wildfly-10.0.0.CR4_specjms.standalone-full-ha-netty-nio-aio.xml").toPath());
-        //diff.loadTo("FNL", new File("/home/wreicher/specWork/wildfly-10.0.0.Final.standalone-specjms.xml").toPath());
-        diff.loadFrom( "base",new File("/home/wreicher/perfWork/amq/jdbc/run-30-1499406726806/benchserver4/standalone-full-ha-jdbc-store.xml").toPath());
-        diff.loadTo( "chng",new File("/home/wreicher/perfWork/amq/jdbc/run-30-1499434095520/benchserver4/standalone-full-ha-jdbc-store.xml").toPath());
+
+
+//        diff.loadFrom( "base",new File("/home/wreicher/perfWork/amq/jdbc/run-30-1499406726806/benchserver4/standalone-full-ha-jdbc-store.xml").toPath());
+//        diff.loadTo( "chng",new File("/home/wreicher/perfWork/amq/jdbc/run-30-1499442429258/benchserver4/standalone-full-ha-jdbc-store.xml").toPath());
+
+        //interaction.final.xml
+        diff.addKeyAttribute("eventHandlerType");
+        diff.addKeyAttribute("interactionId");
+
+        diff.loadFrom("amq6",new File("/home/wreicher/perfWork/amq/jdbc/save/run-40-1499872249226/benchclient1/interaction.final.xml").toPath());
+        diff.loadTo("eap7",new File("/home/wreicher/perfWork/amq/jdbc/save/run-40-1500003680283/benchclient1/interaction.final.xml").toPath());
 
         List<Diff> diffs = diff.getDiff();
         System.out.println("diffs:");

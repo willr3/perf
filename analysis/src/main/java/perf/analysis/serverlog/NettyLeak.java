@@ -53,7 +53,7 @@ public class NettyLeak implements JsonConsumer{
                 String frameString = stack[i];
                 if(frameString.startsWith("\t")){//is a frameStack
                     frameString = frameString.trim();
-                    //trim the (Class.java:lineNumber)
+                    //trimEmptyText the (Class.java:lineNumber)
                     int parenIdx=-1;
                     if( (parenIdx=frameString.indexOf("("))>-1){
                         frameString = frameString.substring(0,parenIdx);
@@ -93,8 +93,9 @@ public class NettyLeak implements JsonConsumer{
 //        filePath = "/home/wreicher/specWork/server.246Y.log";
 //        filePath = "/home/wreicher/runtime/wildfly-10.0.0.Final-invm/standalone/log/server.log";
 //        filePath = "/home/wreicher/specWork/6C/server.log";
-        filePath = "/home/wreicher/runtime/wildfly-10.0.0.Final-pool/standalone/log/server.log";
-        String outPath = "/home/wreicher/runtime/wildfly-10.0.0.Final-pool/standalone/log/server.tree.log";
+        filePath = "/home/wreicher/perfWork/byteBuffer/11N-incrementDecrementTrace/server.log";
+
+        String outPath = "/home/wreicher/perfWork/byteBuffer/11N-incrementDecrementTrace/server.tree.log";
         ServerLogFactory slf = new ServerLogFactory();
         Parser p = slf.newLogEntryParser();
         p.add(nl);
@@ -125,11 +126,11 @@ public class NettyLeak implements JsonConsumer{
 
         try (Writer writer = new FileWriter(outPath)){
             for(Frame x : uniqueFrameList){
-                //System.out.println(frameFrequency.count(x)+":"+x.getChildren().get(0).getCount());
+                //System.out.println(frameFrequency.count(x)+":"+x.getChildren().get(0).getSignalCount());
                 String tree = AsciiArt.printTree(x,getChildren,toStringFunction);
-                System.out.print(tree);
+                //System.out.print(tree);
                 writer.write(tree);
-                System.out.println("\n");
+                //System.out.println("\n");
                 writer.write("\n");
                 writer.flush();
                 //System.out.flush();
@@ -138,7 +139,8 @@ public class NettyLeak implements JsonConsumer{
             e.printStackTrace();
         }
 
-
+        System.out.println("Leak count = "+nl.count);
+        System.out.println("Unique leaks = "+nl.frameFrequency.size());
 
     }
 }

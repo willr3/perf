@@ -26,6 +26,10 @@ public class Counters<T> implements Serializable{
         counts.get(t).addAndGet(amount);
         sum.addAndGet(amount);
     }
+    public void clear(){
+        sum.set(0);
+        counts.clear();
+    }
 
     public boolean contains(T t) {
         return counts.containsKey(t);

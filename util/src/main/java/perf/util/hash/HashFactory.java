@@ -39,10 +39,11 @@ public class HashFactory {
         MessageDigest md = null;
         try{
             md = MessageDigest.getInstance(digestEncoding);
-            md.digest(input.getBytes());
+            md.reset();
+            md.update(input.getBytes("UTF-8"));
             return getHexString(md.digest());
         } catch (NoSuchAlgorithmException e){
-            e.printStackTrace();;
+            e.printStackTrace();
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }

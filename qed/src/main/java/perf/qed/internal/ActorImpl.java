@@ -50,7 +50,6 @@ public class ActorImpl implements Actor {
         };
         logger = Logger.getLogger(scriptName, host.getHostName());
 
-
     }
 
     @Override

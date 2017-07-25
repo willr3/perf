@@ -38,7 +38,7 @@ public class CreateBytemanRules {
         String logFile = "/home/wreicher/perfWork/byteBuffer/argCalls.log";
 
         //the destination file for all the byteman rules
-        String btmFile = "/home/wreicher/script/byteman/MessageRefImpl.btm";
+        String btmFile = "/home/wreicher/script/byteman/AMQB.btm";
 
         EnumeratingClassLoader classLoader = new EnumeratingClassLoader();
         Thread.currentThread().setContextClassLoader(classLoader);
@@ -221,7 +221,7 @@ public class CreateBytemanRules {
             return rtrn;
         };
 
-        List<String> targetClassNames = Arrays.asList(/*"org.apache.activemq.artemis.api.core.ActiveMQBuffers$AMQBuffer",*/ "org.apache.activemq.artemis.core.server.impl.MessageReferenceImpl");
+        List<String> targetClassNames = Arrays.asList("org.apache.activemq.artemis.api.core.ActiveMQBuffers$AMQB");
 
         try (Writer ruleWriter = new FileWriter( btmFile )){
 

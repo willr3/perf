@@ -12,14 +12,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import perf.util.Sets;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -420,6 +413,25 @@ public class FileUtility {
             }
         }
         return rtrn;
+    }
+    public static int lineCount(String substring,String fileName){
+        int index = 0-substring.length();
+        int count = 0;
+        String line = null;
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(fileName));
+            while( (line=reader.readLine())!=null){
+                if(line.indexOf(substring)>-1){
+                    count++;
+                }
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return count;
     }
     public static void writeObjectFile(String fileName,Object object){
         writeObjectFile(new File(fileName),object);

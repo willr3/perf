@@ -100,7 +100,7 @@ public class LineStream extends OutputStream {
                     lineBreak++;
                     i++;
                 }
-                len-=lineBreak-off+1;//because we don't want hte char @ lineBreak
+                len-=lineBreak-off+1;//because we don't want the char @ lineBreak
                 off=lineBreak+1;//because we don't want the char @ lineBreak
                 //printB(b,off,len);
             }

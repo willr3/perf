@@ -152,7 +152,7 @@ public class ParseBytemanJsonLog {
 
             HashMap<Integer,CallSite> uniqueCallsites = new HashMap<>();
 
-            String prefixes[] = new String[]{AsciiArt.ANSI_CYAN,AsciiArt.ANSI_RED,AsciiArt.ANSI_PURPLE,AsciiArt.ANSI_YELLOW,AsciiArt.ANSI_BLUE,AsciiArt.ANSI_GREEN};
+            String prefixes[] = new String[]{AsciiArt.ANSI_CYAN,AsciiArt.ANSI_RED,AsciiArt.ANSI_MAGENTA,AsciiArt.ANSI_YELLOW,AsciiArt.ANSI_BLUE,AsciiArt.ANSI_GREEN};
             for(String key : targetMap.keySet()){
                 CallSite callSite = targetMap.get(key);
                 int hashCode = callSite.hashCode();

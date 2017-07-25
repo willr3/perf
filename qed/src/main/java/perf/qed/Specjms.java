@@ -92,12 +92,20 @@ public class Specjms {
             a.sh("ant startSatellite -Dcontroller.host=${{controllerHost}}");
 
         });
+        rb.addScript("synctime", (output,a)->{
+            a.exec("sudo ntpdate -u clock.redhat.com");
+        });
 
         rb.addScript("dstat", (output,a) -> {
             a.addArtifact("/tmp/dstat.log");
             a.exec("dstat -Tcdngy 1> /tmp/dstat.log");
         });
-
+        rb.addScript("threadCount",(output,a) -> {
+           a.exec("ps huH p <PID_OF_U_PROCESS> | wc -l");
+        });
+        rb.addScript("agents",(output,a) -> {
+           a.exec("jps | grep Agent");
+        });
 
 
     }
