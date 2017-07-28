@@ -1,7 +1,9 @@
 name: specjms
 scripts:
+
   sync-time:
     - sh: sudo ntpdate -u clock.redhat.com
+
   jstack:
     - sh: rm /tmp/jstack.*
     - wait-for: WARMUP_STARTED
@@ -12,7 +14,6 @@ scripts:
     - repeat-until: SATELLITE_STOPPED
     - - sh: jstack ${{SMAGENT_PID}} > /tmp/jstack.${{SMAGENT_PID}}.`date +%Y%m%d_%H%M%S`.txt
     - - sleep: 60_000
-
 
   dstat:
     - sh: rm -f /tmp/dstat.log #-f because @#%$^! root and the rm -i alias
