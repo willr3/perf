@@ -187,12 +187,7 @@ scripts:
     - signal: SERVER_STOPPED
 ---
 hosts:
-  local: wreicher@laptop:22
   client1: benchuser@benchclient1
-  client2: benchuser@benchclient2
-  client3: benchuser@benchclient3
-  client4: benchuser@benchclient4
-
   server3:
     username: root
     hostname: benchserver3
@@ -211,9 +206,6 @@ roles:
     run-scripts:
       - satellite
       - jstack
-      - - with:
-          - uniqueKey: SMAgentPid
-          - pattern: $(jps -v | grep "SMAgent" | cut -d " " -f1)
   controller:
     hosts: client1
     run-scripts:
