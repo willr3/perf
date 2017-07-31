@@ -83,16 +83,18 @@ scripts:
   docker-oracle:
     - log: starting docker
     - signal: DATABASE_STARTING
-    - sh: docker run -d -p 10080:8080 -p 1521:1521 sath89/oracle-12c
+    - sh: "docker run -d -p 10080:8080 -p 1521:1521 sath89/oracle-12c"
+    - - set-state: OracleContainerId
     - - regex: ".*?(?<warning>Warning.*?)[\n\r].*"
       - - abort: docker warning ${{warning}}
-    - - regex: "\\s*(?<OracleContainerId>\\S+)\\s*"
     - log: conatiner id = ${{OracleContainerId}}
     - sh: docker logs -f ${{OracleContainerId}}
     - - echo:
       - - regex: .*?Database ready to use\. Enjoy! ;\).*
         - - ctrlC:
           - signal: DATABASE_STARTED
+      - - regex: .*?Error response from daemon.*
+        - -
     - wait-for: SERVER_STOPPED
     - log: server stopped, stopping database
     - sh: docker stop ${{OracleContainerId}}
