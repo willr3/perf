@@ -34,12 +34,14 @@ scripts:
     - wait-for: CONTROLLER_STARTED
     - queue-download: ${{SPECJMS_HOME}}/output/${{RUNId}}/*
     - queue-download: /tmp/specjms.verbose-gc-*
-    - sh: ant startSatellite
+    - sh: ant startSatellite -Dcontroller.host=${{CONTROLLER_HOST}}
     - - watch:
         - regex: ".*?SatelliteDriver : RunLevel\\[Starting Agents\\] has been signalled.*"
         - - signal: SATELLITE_STARTED
         - regex: "(?<interaction>[^:]+): Cannot maintain pacing distribution.*"
         - - echo:
+        - regex: .*?BUILD FAILED.*
+        - - abort: "Failure trying to run the satellite"
     - signal: SATELLITE_STOPPED
 
   controller:
@@ -51,8 +53,13 @@ scripts:
     - sh: sed -i '/org.spec.jms.sm.nodes/c\org.spec.jms.sm.nodes = ${{SATELLITES}}' ${{SPECJMS_HOME}}/config/${{TOPOLOGY}}
     - sh: sed -i '/org.spec.jms.sp.nodes/c\org.spec.jms.sp.nodes = ${{SATELLITES}}' ${{SPECJMS_HOME}}/config/${{TOPOLOGY}}
     - sh: sed -i '/org.spec.jms.hq.nodes/c\org.spec.jms.hq.nodes = ${{SATELLITES}}' ${{SPECJMS_HOME}}/config/${{TOPOLOGY}}
+
     - signal: CONFIG_READY
     - wait-for: SERVER_STARTED
+    - sh: ant jms-setup
+    - - watch:
+        - echo:
+    - sleep: 1_000
     - sh: ant startController
     - - watch:
         - echo:
@@ -100,6 +107,42 @@ scripts:
     - sh: docker stop ${{OracleContainerId}}
     - sh: docker rm ${{OracleContainerId}}
     - signal: DATABASE_STOPPED
+  amq7:
+    - sh: cd ${{AMQ7_HOME}}
+    - sh: rm -r /log/*
+    - sh: rm -r /data/*
+    - queue-download: ${{AMQ7_HOME}}/log/*
+    - queue-download: ${{AMQ7_HOME}}/etc/artemis.profile
+    - queue-download: ${{AMQ7_HOME}}/etc/broker.xml
+    - signal: SERVER_STARTING
+    - sh: ./bin/artemis run > /tmp/amq7.console.log 2>/dev/null &
+    - sh: export SERVER_PID=$(jps -v | grep "Artemis" | cut -d " " -f1)
+    - sh: echo ${SERVER_PID}
+    - - regex: "\\s*(?<serverPid>\\S+)\\s*"
+    - sh: tail -f ${{AMQ7_HOME}}/log/artemis.log
+    - - watch:
+        - regex: ".*?AMQ241002.*"
+        - - signal: SERVER_STARTED
+          - ctrlC:
+        - regex: ".*FATAL.*"
+        - - ctrlC:
+          - echo:
+          - abort: "Fatal error while starting amq7"
+    - sh: jps -lvm | grep "Artemis" | cut -d " " -f2
+    - - regex: ".*? -Xloggc:(?<gcFile>\\S+).*"
+      - - read-state: gcFile
+        - - regex: "(?<gcFile>[^%]+)%.*"
+          - - sh: lsof -p ${SERVER_PID} | grep --color=none "${{gcFile}}"
+            - - regex: ".*? (?<gcFile>/.+?)[\r\n]+"
+              - - log: updated gcFile=${{gcFile}}
+      - - log: gcFile=${{gcFile}}
+      - - queue-download: ${{gcFile}}
+    - - regex: ".*? -XX:StartFlightRecording.*?filename=(?<jfrFile>[^\\s,]+).*"
+      - - queue-download: ${{jfrFile}}
+    - wait-for: CONTROLLER_STOPPED
+    - sh: ./bin/artemis stop
+    - sleep: 1_000
+    - signal: SERVER_STOPPED
 
   amq6:
     - sh: cd ${{AMQ6_HOME}}
@@ -189,7 +232,11 @@ scripts:
     - signal: SERVER_STOPPED
 ---
 hosts:
+  laptop: wreicher@laptop
   client1: benchuser@benchclient1
+  client2: benchuser@benchclient2
+  client3: benchuser@benchclient3
+  client4: benchuser@benchclient4
   server3:
     username: root
     hostname: benchserver3
@@ -200,40 +247,50 @@ hosts:
 
 ---
 roles:
-  database:
-    hosts: server3
-    run-scripts: docker-oracle
+  ALL:
+    setup-scripts:
+     - sync-time
+    run-scripts:
+     - dstat
+#  database:
+#    hosts: server3
+#    run-scripts: docker-oracle
   satellite:
-    hosts: client1
+    hosts:
+      - client1
+      - client2
+      - client3
+      - client4
     run-scripts:
       - satellite
-      - jstack
   controller:
-    hosts: client1
+    hosts:
+      - client1
     run-scripts:
       - controller
   server:
     hosts: server4
     run-scripts:
-      - eap
+      - amq7
 ---
-setup-scripts:
-  - sync-time
-run-scripts:
-  - dstat
+#setup-scripts:
+#  - sync-time
+#run-scripts:
+#  - dstat
 ---
 states:
   run:
-    BASE: 50
+    BASE: 200
     SPECJMS_HOME: /home/benchuser/code/specjms2007
     EAP_HOME: /home/benchuser/runtime/jboss-eap-7.x.patched.2017-07-19
     AMQ6_HOME: /home/benchuser/runtime/jboss-a-mq-6.3.0.redhat-187
+    AMQ7_HOME: /home/benchuser/runtime/specjms-amq7-7.0.0.ER18-redhat-1
     ENABLE_JFR: false
     JFR_SETTINGS: profile_2ms
     STANDALONE_XML: standalone-full-ha-jdbc-store.xml
     STANDALONE_SH_ARGS: -b 0.0.0.0
     TOPOLOGY: horizontal.properties
     CONTROLLER_HOST: benchclient1
-    SATELLITES: benchclient1
+    SATELLITES: benchclient1 benchclient2 benchclient3 benchclient4
 
 
