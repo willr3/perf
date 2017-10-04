@@ -1,0 +1,273 @@
+name: specjEnteprise WebProfile faban run
+scripts:
+  kill_wf:
+    - sh: jps -l | grep jboss.modules | awk '{print $1}' | xargs -r kill
+
+  start_wf_insurance:
+    - sh: cd ${{WF_HOME_INSURANCE}}
+    - sh: rm ./standalone/log/server.log
+    - sh: rm -Rf standalone/data/tx-object-store/*
+    - queue-download: /tmp/wf10_insurance.standalone.console.log
+    - queue-download: ${{WF_HOME_INSURANCE}}/standalone/log/*
+    - queue-download: ${{WF_HOME_INSURANCE}}/bin/standalone.sh
+    - queue-download: ${{WF_HOME_INSURANCE}}/bin/standalone.conf
+    - queue-download: ${{WF_HOME_INSURANCE}}/standalone/configuration/${{STANDALONE_XML}}
+    - wait-for: DATABASE_READY
+    - signal: INSURANCE_SERVER_STARTING
+    - sh: ./bin/standalone.sh -c ${{WF_CONFIG_INSURANCE}} ${{STANDALONE_SH_ARGS}} > /tmp/wf10_insurance.standalone.console.log 2>/dev/null &
+    - - echo:
+    - sh: export INSURANCE_SERVER_PID=$(jps | grep "jboss-modules.jar"| grep ${{WF_HOME_INSURANCE}}  | cut -d " " -f1)
+    - - sh: echo ${INSURANCE_SERVER_PID}
+      - - regex: "\\s*(?<serverPid>\\S+)\\s*"
+    - sleep: 1_000
+    - sh: tail -f ./standalone/log/server.log
+    - - watch:
+        - regex: ".*? WFLYSRV0025: (?<eapVersion>.*?) started in (?<eapStartTime>\\d+)ms.*"
+        - - ctrlC:
+          - log : wf ${{eapVersion}} started in ${{eapStartTime}}
+          - signal: INSURANCE_SERVER_STARTED
+        - regex: ".*? WFLYSRV0026: .*"
+        - - ctrlC:
+          - abort: wf failed to start cleanly
+        - regex: .*?FATAL.*
+        - - echo:
+          - ctrlC:
+          - abort: FATAL starting wf
+    - sh: grep --color=none "javaOpts\|JAVA_OPTS" /tmp/wf10_insurance.standalone.console.log
+    - - regex: ".*? -Xloggc:(?<gcFile>\\S+).*"
+      - - read-state: gcFile
+        - - regex: "(?<gcFile>[^%]+)%.*"
+          - - sh: lsof -p ${INSURANCE_SERVER_PID} | grep --color=none "${{gcFile}}"
+            - - regex: ".*? (?<gcFile>/.+?)[\r\n]+"
+              - - log: updated gcFile=${{gcFile}}
+      - - log: gcFile=${{gcFile}}
+      - - queue-download: ${{gcFile}}
+    - - regex: ".*? -XX:StartFlightRecording.*?filename=(?<jfrFile>[^\\s,]+).*"
+      - - queue-download: ${{jfrFile}}
+    - wait-for: FABAN_RUN_COMPLETED
+    - sh: kill ${INSURANCE_SERVER_PID}
+    - sleep: 4_000
+    - signal: INSURANCE_SERVER_STOPPED
+
+  start_wf_insurance_provider:
+    - sh: cd ${{WF_HOME_INSURANCE_PROVIDER}}
+    - sh: rm ./standalone/log/server.log
+    - sh: rm -Rf standalone/data/tx-object-store/*
+    - queue-download: /tmp/wf10_insurance_provider.standalone.console.log
+    - queue-download: ${{WF_HOME_INSURANCE_PROVIDER}}/standalone/log/*
+    - queue-download: ${{WF_HOME_INSURANCE_PROVIDER}}/bin/standalone.sh
+    - queue-download: ${{WF_HOME_INSURANCE_PROVIDER}}/bin/standalone.conf
+    - queue-download: ${{WF_HOME_INSURANCE_PROVIDER}}/standalone/configuration/${{STANDALONE_XML}}
+    - wait-for: DATABASE_READY
+    - signal: INSURANCE_PROVIDER_SERVER_STARTING
+    - sh: ./bin/standalone.sh -c ${{WF_CONFIG_INSURANCE_PROVIDER}} ${{STANDALONE_SH_ARGS}} > /tmp/wf10_insurance_provider.standalone.console.log 2>/dev/null &
+    - - echo:
+    - sh: export INSURANCE_PROVIDER_SERVER_PID=$(jps | grep "jboss-modules.jar"| grep ${{WF_HOME_INSURANCE_PROVIDER}}  | cut -d " " -f1)
+    - - sh: echo ${INSURANCE_PROVIDER_SERVER_PID}
+      - - regex: "\\s*(?<serverPid>\\S+)\\s*"
+    - sleep: 1_000
+    - sh: tail -f ./standalone/log/server.log
+    - - watch:
+        - regex: ".*? WFLYSRV0025: (?<eapVersion>.*?) started in (?<eapStartTime>\\d+)ms.*"
+        - - ctrlC:
+          - log : wf ${{eapVersion}} started in ${{eapStartTime}}
+          - signal: INSURANCE_PROVIDER_SERVER_STARTED
+        - regex: ".*? WFLYSRV0026: .*"
+        - - ctrlC:
+          - abort: wf failed to start cleanly
+        - regex: .*?FATAL.*
+        - - echo:
+          - ctrlC:
+          - abort: FATAL starting wf
+    - sh: grep --color=none "javaOpts\|JAVA_OPTS" /tmp/wf10_insurance_provider.standalone.console.log
+    - - regex: ".*? -Xloggc:(?<gcFile>\\S+).*"
+      - - read-state: gcFile
+        - - regex: "(?<gcFile>[^%]+)%.*"
+          - - sh: lsof -p ${INSURANCE_PROVIDER_SERVER_PID} | grep --color=none "${{gcFile}}"
+            - - regex: ".*? (?<gcFile>/.+?)[\r\n]+"
+              - - log: updated gcFile=${{gcFile}}
+      - - log: gcFile=${{gcFile}}
+      - - queue-download: ${{gcFile}}
+    - - regex: ".*? -XX:StartFlightRecording.*?filename=(?<jfrFile>[^\\s,]+).*"
+      - - queue-download: ${{jfrFile}}
+    - wait-for: FABAN_RUN_COMPLETED
+    - sh: kill ${INSURANCE_PROVIDER_SERVER_PID}
+    - sleep: 4_000
+    - signal: INSURANCE_PROVIDER_SERVER_STOPPED
+
+
+  start_wf_vehicle:
+    - sh: cd ${{WF_HOME_VEHICLE}}
+    - sh: rm ./standalone/log/server.log
+    - sh: rm -Rf standalone/data/tx-object-store/*
+    - queue-download: /tmp/wf10_vehicle.standalone.console.log
+    - queue-download: ${{WF_HOME_VEHICLE}}/standalone/log/*
+    - queue-download: ${{WF_HOME_VEHICLE}}/bin/standalone.sh
+    - queue-download: ${{WF_HOME_VEHICLE}}/bin/standalone.conf
+    - queue-download: ${{WF_HOME_VEHICLE}}/standalone/configuration/${{STANDALONE_XML}}
+    - wait-for: DATABASE_READY
+    - signal: VEHICLE_SERVER_STARTING
+    - sh: ./bin/standalone.sh -c ${{WF_CONFIG_VEHILCE}} ${{STANDALONE_SH_ARGS}} > /tmp/wf10_vehicle.standalone.console.log 2>/dev/null &
+    - - echo:
+    - sh: export VEHICLE_SERVER_PID=$(jps | grep "jboss-modules.jar" | grep ${{WF_HOME_VEHICLE}} | cut -d " " -f1)
+    - - sh: echo ${VEHICLE_SERVER_PID}
+      - - regex: "\\s*(?<serverPid>\\S+)\\s*"
+    - sleep: 1_000
+    - sh: tail -f ./standalone/log/server.log
+    - - watch:
+        - regex: ".*? WFLYSRV0025: (?<eapVersion>.*?) started in (?<eapStartTime>\\d+)ms.*"
+        - - ctrlC:
+          - log : wf ${{eapVersion}} started in ${{eapStartTime}}
+          - signal: VEHICLE_SERVER_STARTED
+        - regex: ".*? WFLYSRV0026: .*"
+        - - ctrlC:
+          - abort: wf failed to start cleanly
+        - regex: .*?FATAL.*
+        - - echo:
+          - ctrlC:
+          - abort: FATAL starting wf
+    - sh: grep --color=none "javaOpts\|JAVA_OPTS" /tmp/wf10_vehicle.standalone.console.log
+    - - regex: ".*? -Xloggc:(?<gcFile>\\S+).*"
+      - - read-state: gcFile
+        - - regex: "(?<gcFile>[^%]+)%.*"
+          - - sh: lsof -p ${VEHICLE_SERVER_PID} | grep --color=none "${{gcFile}}"
+            - - regex: ".*? (?<gcFile>/.+?)[\r\n]+"
+              - - log: updated gcFile=${{gcFile}}
+      - - log: gcFile=${{gcFile}}
+      - - queue-download: ${{gcFile}}
+    - - regex: ".*? -XX:StartFlightRecording.*?filename=(?<jfrFile>[^\\s,]+).*"
+      - - queue-download: ${{jfrFile}}
+    - wait-for: FABAN_RUN_COMPLETED
+    - sh: kill ${VEHICLE_SERVER_PID}
+    - sleep: 4_000
+    - signal: VEHICLE_SERVER_STOPPED
+
+  monitor_resources:
+    - sh: cd ${{MONITOR_RESOURCES_HOME}}
+    - wait-for: INSURANCE_SERVER_STARTED
+    - sh: java -jar ./build/libs/MonitorResources.jar -c ${{WF_HOME_INSURANCE}}/standalone/configuration/${{STANDALONE_XML}} -h ${{WF_INTERFACE_INSURANCE}} -p ${{WF_PORT_INSURANCE}} -f ${{MONITOR_RESOURCES_OUTPUT}} 2>/dev/null & export MONITOR_RESOURCES_PID="$!"
+    - queue-download: ${{MONITOR_RESOURCES_OUTPUT}}
+    - wait-for: INSURANCE_SERVER_STOPPED
+    - sh: kill ${MONITOR_RESOURCES_PID}
+
+  restart_faban_agents:
+    - sh: jps -l | grep org.apache.catalina.startup.Bootstrap | awk '{print $1}' | xargs -r --verbose kill
+    - sh: jps -l | grep com.sun.faban.harness.agent.AgentBootstrap | awk '{print $1}' | xargs -r --verbose ssh -n ${host} kill
+    - sh: jps -l | grep com.sun.faban.driver.engine.AgentImpl | awk '{print $1}' | xargs -r --verbose ssh -n ${host} kill -9
+    - sleep: 1_000
+    - sh: ${{FABAN_AGENT}}
+    - sleep: 1_000
+    - signal: FABAN_AGENTS_RESTARTED
+
+  start_master_jEnt_next:
+    - sh: cd ${{KIT_NXT_HOME}}
+    - wait-for: FABAN_AGENTS_RESTARTED
+    - sh: ./gradlew faban.harness.start
+    - signal: FABAN_MASTER_READY
+
+  start_master_jEnt_2010:
+    - sh: cd ${{KIT_HOME}}
+    - wait-for: FABAN_AGENTS_RESTARTED
+    - sh: ant -q -f ${{FABAN_BUILD}} faban.harness.start
+    - signal: FABAN_MASTER_READY
+
+  faban_run:
+    - queue-download: ${{KIT_HOME}}/${{FABAN_DIR}}/${RUN_ID}/log.xml
+    - queue-download: ${{KIT_HOME}}/${{FABAN_DIR}}/${RUN_ID}/resultinfo
+    - sh: cd ${{KIT_HOME}}
+    - sh: sed -i '/<fa:scale>[0-9]*<\/fa:scale>/c\<fa:scale>${{RUN_TX_RATE}}<\/fa:scale>' ${{FABAN_CONFIG}}
+    - wait-for: INSURANCE_SERVER_STARTED
+    - sh: ./${{FABAN_DIR}}/bin/fabancli submit ${{FABAN_BENCHMARK}} ${{FABAN_PROFILE}} ${{FABAN_CONFIG}} > /tmp/run.id
+    - sh: export RUN_ID="$(< /tmp/run.id)"
+    - signal: FABAN_RUN_STARTED
+    - sh: ./${{FABAN_DIR}}/bin/fabancli wait ${RUN_ID}
+    - signal: FABAN_RUN_COMPLETED
+    - signal: FABAN_COMPLETE
+
+  load_database:
+    - wait-for: FABAN_MASTER_READY
+    - sh: cd ${{KIT_NXT_HOME}}
+    - sh: ./gradlew load.database.insurance.jpa
+    - signal: DATABASE_LOADED
+
+  vacum_database:
+    - wait-for: DATABASE_LOADED
+    - sh: su -c '/opt/postgresql-10.x/bin/vacuumdb -h benchserver3G1 -Z insurance' - postgres
+    - signal: DATABASE_READY
+
+hosts:
+  client1: benchuser@benchclient1.perf.lab.eng.rdu.redhat.com:22
+  client2: benchuser@benchclient2.perf.lab.eng.rdu.redhat.com:22
+  client3: benchuser@benchclient3.perf.lab.eng.rdu.redhat.com:22
+  client4: benchuser@benchclient4.perf.lab.eng.rdu.redhat.com:22
+  server1: benchuser@benchserver1.perf.lab.eng.rdu.redhat.com:22
+  server2: benchuser@benchserver2.perf.lab.eng.rdu.redhat.com:22
+  server3: benchuser@benchserver3.perf.lab.eng.rdu.redhat.com:22
+  server3root: root@benchserver3.perf.lab.eng.rdu.redhat.com:22
+  server4: benchuser@benchserver4.perf.lab.eng.rdu.redhat.com:22
+
+roles:
+  faban-agents:
+    hosts:
+      - client1
+      - client2
+      - client3
+      - client4
+      - server2
+      - server3
+    run-scripts:
+      - restart_faban_agents
+  faban-master:
+    hosts:
+      - client1
+    run-scripts:
+      - start_master_jEnt_2010
+      - load_database
+      - faban_run
+  database:
+    hosts:
+      - server3root
+    run-scripts:
+      - vacum_database
+  app-server:
+    hosts:
+      - server2
+    run-scripts:
+      - kill_wf
+      - start_wf_insurance
+      - start_wf_insurance_provider
+      - start_wf_vehicle
+      - monitor_resources
+states:
+  run:
+    KIT_HOME: /home/benchuser/code/specjEnterprise2010
+    KIT_NXT_HOME: /home/benchuser/code/jEnterprise
+    FABAN_BUILD: /home/benchuser/code/specjEnterprise2010/build.xml
+    FABAN_DIR: faban/harness/faban
+    FABAN_BENCHMARK: specjwebprofile
+    FABAN_PROFILE: SPECjEnterpriseNext-WebProfile
+    FABAN_CONFIG: /home/benchuser/code/specjEnterprise2010/faban/harness/faban/config/profiles/SPECjEnterpriseNext-WebProfile/run.xml.specjwebprofile
+    FABAN_AGENT: /home/benchuser/faban/bin/agent
+
+#WF config
+    WF_HOME_INSURANCE: /home/benchuser/runtime/wildfly-10.1.0.Final_insurance
+    WF_HOME_INSURANCE_PROVIDER: /home/benchuser/runtime/wildfly-10.1.0.Final_insurance_provider
+    WF_HOME_VEHICLE: /home/benchuser/runtime/wildfly-10.1.0.Final_vehicle
+    WF_CONFIG_VEHILCE: standalone-full-copy.xml
+    WF_CONFIG_INSURANCE: standalone-full-copy.xml
+    WF_CONFIG_INSURANCE_PROVIDER: standalone-full-copy.xml
+    WF_INTERFACE_INSURANCE: benchserver2G1
+    WF_PORT_INSURANCE: 9990
+
+#Monitor Resources
+    MONITOR_RESOURCES_OUTPUT: /tmp/resources.insurance_provider.out
+
+#run config
+    RUN_TX_RATE: 10000
+    RUN_DESCRIPTION: test
+    RUN_DRIVERS: benchclient1G1 benchclient2G1 benchclient3G1 benchclient4G1
+    RUN_TIMING_RAMP_UP:
+    RUN_TIMINS_STEADY_STATE:
+    RUN_TIMING_RAMP_DOWN:
+    RUN_AGENTS:
+
