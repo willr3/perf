@@ -111,15 +111,16 @@ scripts:
     - sh: cd ${{AMQ7_HOME}}
     - sh: rm -r ${{AMQ7_HOME}}/log/*
     - sh: rm -r ${{AMQ7_HOME}}/data/*
+    - sh: rm -r /perf1/amq7/*
     - queue-download: ${{AMQ7_HOME}}/log/*
     - queue-download: ${{AMQ7_HOME}}/etc/artemis.profile
     - queue-download: ${{AMQ7_HOME}}/etc/broker.xml
     - signal: SERVER_STARTING
     - sh: ./bin/artemis run > /tmp/amq7.console.log 2>&1 &
-    - sleep: 1_000
     - sh: export SERVER_PID=$(jps -v | grep "Artemis" | cut -d " " -f1)
     - sh: echo ${SERVER_PID}
     - - regex: "\\s*(?<serverPid>\\S+)\\s*"
+    - sleep: 1_000 # added so that the cat will have time to see the failure in amq7.console.log
     - sh: cat /tmp/amq7.console.log
     - - watch:
         - regex: ".*?Error:.*"
@@ -285,7 +286,7 @@ roles:
 ---
 states:
   run:
-    BASE: 200
+    BASE: 500
     SPECJMS_HOME: /home/benchuser/code/specjms2007
     EAP_HOME: /home/benchuser/runtime/jboss-eap-7.x.patched.2017-07-19
     AMQ6_HOME: /home/benchuser/runtime/jboss-a-mq-6.3.0.redhat-187
