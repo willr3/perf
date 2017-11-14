@@ -24,7 +24,8 @@ public class HashedList<V> {
         boolean rtrn = true;
         if(!values.isEmpty()){
             for(V v : values){
-                rtrn = rtrn && add(v);
+                boolean addRtrn = add(v);//moved to separate line to avoid ordering bug
+                rtrn = addRtrn && rtrn;
             }
         }
         return rtrn;
