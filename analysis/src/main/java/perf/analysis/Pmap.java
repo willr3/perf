@@ -9,6 +9,7 @@ import perf.util.json.Jsons;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -65,10 +66,10 @@ public class Pmap implements JsonConsumer {
         System.out.println("orig: "+orig.minAddress.toString(10)+" - "+orig.runnerUpAddress.toString(10)+" = "+orig.runnerUpAddress.subtract(orig.minAddress));
         System.out.println("post: "+after.minAddress.toString(10)+" - "+after.runnerUpAddress.toString(10)+" = "+after.runnerUpAddress.subtract(after.minAddress));
         System.out.println(Long.MAX_VALUE);
-        System.exit(0);
+        //System.exit(0);
 
         List<String> entries = orig.mappingKBytes.entries();
-        entries.sort((a,b)-> orig.mappingKBytes.count(a)-orig.mappingKBytes.count(b));
+        entries.sort(Comparator.comparingInt(a -> orig.mappingKBytes.count(a)));
 
         HashedList<String> allEntries = new HashedList<>();
         entries.stream().forEach(a->allEntries.add(a));
