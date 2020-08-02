@@ -33,7 +33,7 @@ public class SshRunner {
             .required()
             .hasArg()
             .argName("path")
-            .desc("full path for the output folder, does not createa  sub-folder")
+            .desc("full path for the output folder, does not create a sub-folder")
             .build()
         );
 
@@ -50,6 +50,15 @@ public class SshRunner {
                 .desc("number of threads for executing commands [24]")
                 .build()
         );
+
+        options.addOption(
+            Option.builder("C")
+                .longOpt("colorTerminal")
+                .hasArg(false)
+                .desc("flag to enable color formatted terminal")
+                .build()
+        );
+
 
         options.addOption(
             Option.builder("s")
@@ -160,8 +169,12 @@ public class SshRunner {
         if (cmd.hasOption("identity") ){
             config.setIdentity(cmd.getOptionValue("identity"));
         }
-        if (cmd.hasOption("passphrase") && cmd.getOptionValue("passphrase")!=RunConfig.DEFAULT_PASSPHRASE){
+        if (cmd.hasOption("passphrase") && !cmd.getOptionValue("passphrase").equals( RunConfig.DEFAULT_PASSPHRASE) ){
             config.setPassphrase(cmd.getOptionValue("passphrase"));
+        }
+        
+        if (cmd.hasOption("colorTerminal") ){
+            config.setColorTerminal( true );
         }
 
         Properties stateProps = cmd.getOptionProperties("S");
